@@ -15,7 +15,7 @@ This version returns the most recent 100 visible posts. It has no ranking, publi
 
 ## Architecture
 
-`app/page.tsx` is the client interface. `app/api/blub/route.ts` is the shared JSON/multipart API. `db/schema.ts` and `drizzle/` define the durable schema. `.openai/hosting.json` declares `DB` and `BUCKET`. Identity comes from Sites' trusted authenticated visitor headers, never client-submitted account IDs. Hosted authentication is managed by Sites; native mobile clients would need a supported authentication adapter before using this API.
+`app/page.tsx` is the landing page; `app/feed/page.tsx` is the client app. The homepage links to `/feed`, and sign-in returns visitors to their feed. Hanken Grotesk is self-hosted with its OFL license in `public/fonts/`. `app/api/blub/route.ts` is the shared JSON/multipart API. `db/schema.ts` and `drizzle/` define the durable schema. `.openai/hosting.json` declares `DB` and `BUCKET`. Identity comes from Sites' trusted authenticated visitor headers, never client-submitted account IDs. Hosted authentication is managed by Sites; native mobile clients would need a supported authentication adapter before using this API.
 
 The hosted Site starts owner-private. To test with real friends, grant them access in Sites sharing settings. App-level friendships further limit photo access after sign-in. No example accounts or photos are seeded in production.
 
