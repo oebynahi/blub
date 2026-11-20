@@ -361,3 +361,36 @@ input::placeholder, textarea::placeholder { color: var(--subtle); opacity: 1; }
   .landing-footer { margin: 0 20px; gap: 14px; flex-wrap: wrap; }
   .landing-footer>span { font-size: .75rem; }
 }
+
+@media (any-hover: hover) and (prefers-reduced-motion: no-preference) {
+  .preview-card {
+    transform: perspective(850px) rotateX(var(--pitch, 0deg)) rotateY(var(--yaw, 0deg)) rotate(2deg);
+    transition: transform 160ms ease-out;
+  }
+}
+.reaction-link { position: relative; }
+.reaction-burst {
+  position: absolute;
+  left: 50%;
+  top: 35%;
+  z-index: 2;
+  pointer-events: none;
+}
+.reaction-burst i {
+  position: absolute;
+  font: normal 1.2rem/1 sans-serif;
+  --drift: -25px;
+  --spin: -14deg;
+  animation: bubble-up 380ms ease-out both;
+}
+.reaction-burst i:nth-child(2) { --drift: 0px; --spin: 8deg; }
+.reaction-burst i:nth-child(3) { --drift: 25px; --spin: 16deg; }
+@keyframes bubble-up {
+  from { opacity: 0; transform: translate(-50%, 2px) scale(.55); }
+  25% { opacity: 1; }
+  70% { opacity: 1; }
+  to { opacity: 0; transform: translate(calc(-50% + var(--drift)), -38px) rotate(var(--spin)) scale(1.05); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reaction-burst { display: none; }
+}

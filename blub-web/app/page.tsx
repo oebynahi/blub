@@ -1,6 +1,8 @@
 import { Camera, Check, Clock3, Sparkles, Lock, Plus, Users } from "lucide-react";
 import { chatGPTSignInPath, getChatGPTUser } from "./chatgpt-auth";
 
+import { OpenBlubLink, TiltPreview } from "./home-interactions";
+
 export const dynamic = "force-dynamic";
 
 export default async function LandingPage() {
@@ -16,7 +18,7 @@ export default async function LandingPage() {
           <a href="#how-it-works">How it works</a>
           <a href="#privacy">Privacy</a>
         </nav>
-        <a className="secondary" href="/feed">Open Blub</a>
+        <OpenBlubLink className="secondary"/>
       </header>
 
       <main className="landing-main" id="main-content">
@@ -24,7 +26,7 @@ export default async function LandingPage() {
           <div className="hero-copy">
             <span className="landing-kicker"><Sparkles size={16}/>A friends-only photo app</span>
             <h1 id="landing-title">Your photos.<br/><span>Your friends.</span></h1>
-            <p>Share photos with the people you know.<br className="hero-break"/> See what they’ve posted, newest first.</p>
+            <p>Ditch the algorithm and connect for real.</p>
             <div className="hero-actions">
               <a className="primary" href={start} target={user ? undefined : "_top"}>{user ? "Go to your feed" : "Get started"}<Plus size={18}/></a>
               <a className="hero-secondary" href="#how-it-works">A look inside</a>
@@ -33,13 +35,13 @@ export default async function LandingPage() {
             <div className="hero-footnote"><Lock size={14}/>Your photos stay between accepted friends.</div>
           </div>
 
-          <div className="hero-visual" aria-label="Illustrative post preview">
+          <TiltPreview>
             <div className="preview-card">
               <div className="preview-header"><span className="preview-avatar">Y</span><span><b>Your photo</b><small>Post preview</small></span><Lock size={15}/></div>
               <div className="preview-art" aria-hidden="true"><img className="chrome-sculpture" src="/chrome-mark.png" alt="" width="600" height="600"/></div>
               <div className="preview-caption"><span>Shared with friends</span><Check size={16}/></div>
             </div>
-          </div>
+          </TiltPreview>
         </section>
 
         <section className="how-section" id="how-it-works" aria-labelledby="how-title">
@@ -60,7 +62,7 @@ export default async function LandingPage() {
           </div>
         </section>
       </main>
-      <footer className="landing-footer"><a className="wordmark" href="/" aria-label="Blub home"><img className="brand-symbol" src="/blub-icon.png" alt="" width="34" height="34"/>blub</a><span>Photos with friends.</span><a href="/feed">Open Blub</a></footer>
+      <footer className="landing-footer"><a className="wordmark" href="/" aria-label="Blub home"><img className="brand-symbol" src="/blub-icon.png" alt="" width="34" height="34"/>blub</a><span>Photos with friends.</span><OpenBlubLink/></footer>
     </div>
   );
 }
