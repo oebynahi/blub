@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState, type MouseEvent, type PointerEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent, type ReactNode } from "react";
+
+import { createPortal } from "react-dom";
 
 export function TiltPreview({ children }: { children: ReactNode }) {
   function move(event: PointerEvent<HTMLDivElement>) {
@@ -21,8 +23,31 @@ export function TiltPreview({ children }: { children: ReactNode }) {
   return <div className="hero-visual" onPointerMove={move} onPointerLeave={reset} onPointerCancel={reset}>{children}</div>;
 }
 
+const reactions = ["❤️", "😍", "😂", "💜", "🥰", "💖", "🤣", "🫶"];
+const burstDuration = 1050;
+
+function makeBurst() {
+  const columns = window.innerWidth < 650 ? 10 : 16;
+  return Array.from({ length: columns * 3 }, (_, index) => {
+    const wave = Math.floor(index / columns);
+    const column = index % columns;
+    return {
+      emoji: reactions[Math.floor(Math.random() * reactions.length)],
+      style: {
+        left: ((column + 0.15 + Math.random() * 0.7) / columns * 100) + "%",
+        top: (28 + wave * 30 + Math.random() * 16) + "%",
+        fontSize: (1.6 + Math.random() * 2.6) + "rem",
+        animationDelay: (wave * 85 + Math.random() * 55) + "ms",
+        animationDuration: (650 + Math.random() * 150) + "ms",
+        "--drift": (Math.random() * 14 - 7) + "vw",
+        "--spin": (Math.random() * 60 - 30) + "deg",
+      } as CSSProperties,
+    };
+  });
+}
+
 export function OpenBlubLink({ className }: { className?: string }) {
-  const [burst, setBurst] = useState(false);
+  const [burst, setBurst] = useState<ReturnType<typeof makeBurst>>([]);
   const timer = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
@@ -32,18 +57,23 @@ export function OpenBlubLink({ className }: { className?: string }) {
     event.preventDefault();
     if (timer.current !== undefined) return;
     const href = event.currentTarget.href;
-    setBurst(true);
+    setBurst(makeBurst());
     timer.current = window.setTimeout(() => {
       timer.current = undefined;
-      setBurst(false);
+      setBurst([]);
       window.location.assign(href);
-    }, 380);
+    }, burstDuration);
   }
 
   return (
-    <a className={["reaction-link", className].filter(Boolean).join(" ")} href="/feed" onClick={open}>
+    <a className={className} href="/feed" onClick={open}>
       Open Blub
-      {burst && <span className="reaction-burst" aria-hidden="true"><i>❤️</i><i>😍</i><i>😂</i></span>}
+      {burst.length > 0 && createPortal(
+        <div className="reaction-burst" aria-hidden="true">
+          {burst.map(({ emoji, style }, index) => <span key={index} style={style}>{emoji}</span>)}
+        </div>,
+        document.body
+      )}
     </a>
   );
 }

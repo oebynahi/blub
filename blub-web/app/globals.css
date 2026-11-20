@@ -368,28 +368,26 @@ input::placeholder, textarea::placeholder { color: var(--subtle); opacity: 1; }
     transition: transform 160ms ease-out;
   }
 }
-.reaction-link { position: relative; }
 .reaction-burst {
-  position: absolute;
-  left: 50%;
-  top: 35%;
-  z-index: 2;
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  z-index: 60;
   pointer-events: none;
+  user-select: none;
+  contain: strict;
 }
-.reaction-burst i {
+.reaction-burst span {
   position: absolute;
-  font: normal 1.2rem/1 sans-serif;
-  --drift: -25px;
-  --spin: -14deg;
-  animation: bubble-up 380ms ease-out both;
+  line-height: 1;
+  animation: bubble-up ease-out both;
 }
-.reaction-burst i:nth-child(2) { --drift: 0px; --spin: 8deg; }
-.reaction-burst i:nth-child(3) { --drift: 25px; --spin: 16deg; }
 @keyframes bubble-up {
-  from { opacity: 0; transform: translate(-50%, 2px) scale(.55); }
-  25% { opacity: 1; }
-  70% { opacity: 1; }
-  to { opacity: 0; transform: translate(calc(-50% + var(--drift)), -38px) rotate(var(--spin)) scale(1.05); }
+  from { opacity: 0; transform: translate(-50%, 0) scale(.35); }
+  12% { opacity: 1; }
+  42% { transform: translate(calc(-50% - var(--drift)), -17vh) scale(1.12); }
+  72% { opacity: 1; }
+  to { opacity: 0; transform: translate(calc(-50% + var(--drift)), -55vh) rotate(var(--spin)) scale(.9); }
 }
 @media (prefers-reduced-motion: reduce) {
   .reaction-burst { display: none; }
