@@ -34,7 +34,7 @@ p { font-size: 1rem; line-height: 1.6; }
 .site-header { position: sticky; top: 0; z-index: 15; background: #08090ced; backdrop-filter: blur(20px); border-bottom: 1px solid var(--line); }
 .header-inner { max-width: 1184px; margin: auto; padding: 0 36px; min-height: 80px; display: flex; gap: 38px; align-items: center; }
 .wordmark { display: inline-flex; align-items: center; gap: 9px; font-size: 2rem; font-weight: 650; letter-spacing: -1.9px; }
-.brand-symbol { font-size: 2.2rem; font-weight: 400; color: var(--accent); letter-spacing: 0; line-height: 1; }
+.brand-symbol { width: 2.2rem; height: auto; flex: none; }
 .desktop-nav { display: flex; align-items: center; gap: 5px; }
 .desktop-nav button { display: flex; gap: 7px; align-items: center; font-size: .875rem; padding: 10px 13px; border-radius: 9px; color: var(--muted); }
 .desktop-nav button.active { color: var(--text); background: var(--raised); font-weight: 550; }
@@ -209,7 +209,7 @@ h1 { font-size: clamp(2.2rem,4vw,3.25rem); font-weight: 500; line-height: 1.13; 
 @media (max-width: 600px) {
   .header-inner { padding: 0 20px; min-height: 68px; }
   .wordmark { font-size: 1.8rem; }
-  .brand-symbol { font-size: 1.9rem; }
+  .brand-symbol { width: 1.9rem; }
   .desktop-nav { display: none; }
   .header-share { display: none; }
   .signin-link { background: var(--raised); border-radius: 100px; padding: 8px 15px; font-size: .875rem; }
@@ -306,11 +306,14 @@ input::placeholder, textarea::placeholder { color: var(--subtle); opacity: 1; }
 .preview-header b { display: block; font-size: .875rem; font-weight: 550; }
 .preview-header small { display: block; font-size: .75rem; color: var(--subtle); margin-top: 4px; }
 .preview-header>svg { color: var(--subtle); }
-.preview-art { height: 270px; position: relative; overflow: hidden; background: radial-gradient(ellipse at 15% 15%,#65659855,transparent 65%),radial-gradient(ellipse at 85% 100%,#528b913d,transparent 60%),#161c29; }
-.glass-orb { position: absolute; border-radius: 50%; border: 1px solid #d2dbff66; background: radial-gradient(circle at 28% 21%,#eef9ffb0,transparent 24%),radial-gradient(circle at 70% 80%,#7ab8d14a,transparent 65%),linear-gradient(140deg,#b9a7f04d,#8fc7dc12 50%,#d1a4d94d); box-shadow: inset 2px 3px 10px #f0f5ff40,inset -10px -12px 24px #56416d4d,0 20px 30px #08091266; }
-.orb-large { width: 192px; height: 192px; left: 62px; top: 35px; }
-.orb-small { width: 95px; height: 95px; right: 40px; bottom: 23px; }
-.art-glint { position: absolute; right: 42px; top: 22px; font-size: 35px; color: #e2d6ff; }
+.preview-art { display: grid; place-items: center; height: 270px; position: relative; overflow: hidden; background: radial-gradient(ellipse at 15% 15%,#65659855,transparent 65%),radial-gradient(ellipse at 85% 100%,#528b913d,transparent 60%),#161c29; }
+.chrome-sculpture {
+  display: block;
+  width: min(78%, 230px);
+  height: auto;
+  transform: perspective(600px) rotateY(-20deg) rotateX(12deg) rotate(-13deg);
+  filter: drop-shadow(7px 18px 10px #06081099);
+}
 .preview-caption { display: flex; align-items: center; justify-content: space-between; padding: 17px 20px; font-size: .75rem; color: var(--muted); }
 .preview-caption>svg { color: #b5c9dc; }
 .how-section, .privacy-section { display: grid; grid-template-columns: 1fr 1fr; gap: 90px; border-top: 1px solid var(--line); padding: 65px 0; scroll-margin-top: 24px; }
@@ -340,8 +343,6 @@ input::placeholder, textarea::placeholder { color: var(--subtle); opacity: 1; }
   .landing-hero { gap: 30px; }
   .hero-copy h1 { font-size: 3rem; }
   .hero-visual { padding: 0; }
-  .orb-large { left: 25px; }
-  .orb-small { right: 15px; }
   .how-section, .privacy-section { gap: 40px; }
   .landing-footer { margin: 0 36px; }
 }
@@ -355,8 +356,6 @@ input::placeholder, textarea::placeholder { color: var(--subtle); opacity: 1; }
   .hero-visual { padding: 0 5px; }
   .preview-card { max-width: 350px; }
   .preview-art { height: 235px; }
-  .orb-large { width: 165px; height: 165px; left: 40px; top: 30px; }
-  .orb-small { width: 80px; height: 80px; right: 25px; }
   .how-section, .privacy-section { grid-template-columns: 1fr; gap: 30px; padding: 45px 0; }
   .privacy-questions { padding-top: 0; }
   .landing-footer { margin: 0 20px; gap: 14px; flex-wrap: wrap; }

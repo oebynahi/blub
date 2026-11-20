@@ -11,7 +11,7 @@ export default async function LandingPage() {
     <div className="landing-page">
       <a className="skip-link" href="#main-content">Skip to content</a>
       <header className="landing-header">
-        <a className="wordmark" href="/" aria-label="Blub home"><span className="brand-symbol" aria-hidden="true">✳</span>blub</a>
+        <a className="wordmark" href="/" aria-label="Blub home"><img className="brand-symbol" src="/blub-icon.png" alt="" width="34" height="34"/>blub</a>
         <nav className="landing-links" aria-label="Main navigation">
           <a href="#how-it-works">How it works</a>
           <a href="#privacy">Privacy</a>
@@ -36,7 +36,7 @@ export default async function LandingPage() {
           <div className="hero-visual" aria-label="Illustrative post preview">
             <div className="preview-card">
               <div className="preview-header"><span className="preview-avatar">Y</span><span><b>Your photo</b><small>Post preview</small></span><Lock size={15}/></div>
-              <div className="preview-art" aria-hidden="true"><span className="glass-orb orb-large"/><span className="glass-orb orb-small"/><span className="art-glint">✧</span></div>
+              <div className="preview-art" aria-hidden="true"><img className="chrome-sculpture" src="/chrome-mark.png" alt="" width="600" height="600"/></div>
               <div className="preview-caption"><span>Shared with friends</span><Check size={16}/></div>
             </div>
           </div>
@@ -60,7 +60,7 @@ export default async function LandingPage() {
           </div>
         </section>
       </main>
-      <footer className="landing-footer"><a className="wordmark" href="/" aria-label="Blub home"><span className="brand-symbol" aria-hidden="true">✳</span>blub</a><span>Photos with friends.</span><a href="/feed">Open Blub</a></footer>
+      <footer className="landing-footer"><a className="wordmark" href="/" aria-label="Blub home"><img className="brand-symbol" src="/blub-icon.png" alt="" width="34" height="34"/>blub</a><span>Photos with friends.</span><a href="/feed">Open Blub</a></footer>
     </div>
   );
 }
