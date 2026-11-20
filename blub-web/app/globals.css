@@ -17,7 +17,7 @@
   --muted: #c7cad8;
   --line: #444957;
   --accent: #c7a1e6;
-  --gradient: linear-gradient(110deg, #be91e4 4%, #e898bc 45%, #efb58f 88%);
+  --gradient: linear-gradient(110deg, #ae70ff 8%, #cc8af5 36%, #ffab86 69%, #ffce9f 96%);
 }
 * { box-sizing: border-box; }
 body { margin: 0; }
@@ -75,7 +75,7 @@ h1 { font-size: clamp(2.2rem,4vw,3.25rem); font-weight: 500; line-height: 1.13; 
 .memory-card { position: absolute; background: #302735; border: 1px solid #65536e; border-radius: 16px; padding: 9px; box-shadow: 0 18px 28px -8px #0007; width: 147px; }
 .memory-back { left: calc(50% - 126px); top: 36px; transform: rotate(-13deg); }
 .memory-front { left: calc(50% - 5px); top: 64px; transform: rotate(12deg); }
-.memory-sunset { height: 131px; position: relative; overflow: hidden; border-radius: 10px; background: linear-gradient(#cbb8e8,#eeb4b4 55%,#eab893 75%,#c2a2cb); }
+.memory-sunset { height: 131px; position: relative; overflow: hidden; border-radius: 10px; background: linear-gradient(#9963dd,#d891ce 47%,#ffb384 76%,#ad7cca); }
 .memory-sunset:before { content: ''; position: absolute; width: 48px; height: 48px; border-radius: 50%; top: 38px; left: 41px; background: #ffefc3; box-shadow: 0 0 30px #ffe6b4; }
 .memory-sunset:after { content: ''; position: absolute; border-radius: 50% 60% 0 0; width: 210px; height: 76px; background: #9584b6; left: -20px; top: 99px; transform: rotate(-7deg); }
 .memory-sunset span { position: absolute; width: 150px; height: 42px; background: #ae9bc4; top: 85px; left: -35px; border-radius: 70% 80% 0 0; }
@@ -275,7 +275,7 @@ input::placeholder, textarea::placeholder { color: var(--subtle); opacity: 1; }
 }
 .primary { box-shadow: inset 0 1px 0 #fff9, 0 3px 12px #0004; }
 .heading-orbit { background: linear-gradient(145deg,#2d344c,#272638); box-shadow: inset 0 1px 0 #b8d9ff30; }
-.welcome-card { background: radial-gradient(ellipse at 15% 0%,#7b73b521,transparent 48%),radial-gradient(ellipse at 95% 0%,#64b4c014,transparent 45%),var(--surface); }
+.welcome-card { background: radial-gradient(ellipse at 15% 0%,#9250df42,transparent 48%),radial-gradient(ellipse at 95% 0%,#ffa27730,transparent 45%),var(--surface); }
 
 /* Separate homepage, using the same type scale and controls as the app. */
 .landing-page { overflow: clip; }
@@ -306,7 +306,7 @@ input::placeholder, textarea::placeholder { color: var(--subtle); opacity: 1; }
 .preview-header b { display: block; font-size: .875rem; font-weight: 550; }
 .preview-header small { display: block; font-size: .75rem; color: var(--subtle); margin-top: 4px; }
 .preview-header>svg { color: var(--subtle); }
-.preview-art { display: grid; place-items: center; height: 270px; position: relative; overflow: hidden; background: radial-gradient(ellipse at 15% 15%,#65659855,transparent 65%),radial-gradient(ellipse at 85% 100%,#528b913d,transparent 60%),#161c29; }
+.preview-art { display: grid; place-items: center; height: 270px; position: relative; overflow: hidden; background: radial-gradient(ellipse at 15% 15%,#8344e7a8,transparent 68%),radial-gradient(ellipse at 85% 100%,#ff9f7385,transparent 62%),#1c1428; }
 .chrome-sculpture {
   display: block;
   width: min(78%, 230px);
