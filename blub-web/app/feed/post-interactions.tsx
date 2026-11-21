@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, type FormEvent } from "react";
+import { preload } from "react-dom";
 import { Heart, MessageCircle } from "lucide-react";
 
 type Post = { id: string; caption: string; liked: number; like_count: number; comment_count: number };
@@ -12,6 +13,7 @@ type Props = {
 };
 
 export function PostInteractions({ post, busy, act }: Props) {
+  preload("/chrome-heart.png", { as: "image" });
   const [pulse, setPulse] = useState(0);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -64,7 +66,7 @@ export function PostInteractions({ post, busy, act }: Props) {
     <div className="post-media" onDoubleClick={() => like(false)}>
       <img className="post-photo" src={"/api/blub?action=photo&id=" + post.id}
         alt={post.caption || "Photo shared with friends"} loading="lazy"/>
-      {pulse > 0 && <img key={pulse} className="like-pulse" src="/chrome-heart.svg" alt=""
+      {pulse > 0 && <img key={pulse} className="like-pulse" src="/chrome-heart.png" alt=""
         onAnimationEnd={() => setPulse(0)}/>}
     </div>
     {post.caption && <p className="caption">{post.caption}</p>}
