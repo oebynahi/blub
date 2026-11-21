@@ -14,8 +14,23 @@ export async function GET(req:Request){try{
  return new Response(image.body,{headers:{"Content-Type":image.httpMetadata?.contentType||"image/jpeg","Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"}});
  }
  if(!me)return json({authenticated:true,me:null});
+ if(action==="comments"){
+   const id=url.searchParams.get("id"), before=Number(url.searchParams.get("before") ?? Number.MAX_SAFE_INTEGER);
+   if(!Number.isSafeInteger(before)||before<1)return json({error:"Invalid comment cursor"},400);
+   const access=[id,u.userId,u.userId,u.userId,u.userId];
+   const [post,page]=await db().batch([
+     db().prepare(`SELECT p.id FROM posts p WHERE p.id=? AND ${visible}`).bind(...access),
+     db().prepare(`SELECT c.id,c.body,u.handle FROM posts p JOIN comments c ON c.post=p.id
+       JOIN users u ON u.id=c.author WHERE p.id=? AND ${visible} AND c.id<? ORDER BY c.id DESC LIMIT 31`).bind(...access,before)
+   ]);
+   if(!post.results.length)return json({error:"Post not found"},404);
+   return json({comments:page.results.slice(0,30).reverse(),more:page.results.length>30});
+ }
  if(action==="search"){const q=(url.searchParams.get("q")||"").replace(/^@/,"").toLowerCase();if(q.length<2)return json({users:[]});const rows=await db().prepare("SELECT id,name,handle,bio FROM users WHERE id!=? AND substr(handle,1,length(?))=? LIMIT 20").bind(u.userId,q,q).all();return json({users:rows.results});}
- const feed=await db().prepare(`SELECT p.id,p.caption,p.created_at,u.name,u.handle,p.author FROM posts p JOIN users u ON u.id=p.author WHERE ${visible} ORDER BY p.created_at DESC,p.id DESC LIMIT 100`).bind(u.userId,u.userId,u.userId,u.userId).all();
+ const feed=await db().prepare(`SELECT p.id,p.caption,p.created_at,u.name,u.handle,p.author,
+   (SELECT count(*) FROM likes WHERE post=p.id) AS like_count,
+   EXISTS(SELECT 1 FROM likes WHERE post=p.id AND author=?) AS liked,
+   (SELECT count(*) FROM comments WHERE post=p.id) AS comment_count FROM posts p JOIN users u ON u.id=p.author WHERE ${visible} ORDER BY p.created_at DESC,p.id DESC LIMIT 100`).bind(u.userId,u.userId,u.userId,u.userId,u.userId).all();
  const friends=await db().prepare("SELECT f.*,u.name,u.handle,u.bio FROM friendships f JOIN users u ON u.id=CASE WHEN f.sender=? THEN f.recipient ELSE f.sender END WHERE f.sender=? OR f.recipient=? ORDER BY f.created_at DESC").bind(u.userId,u.userId,u.userId).all();
  return json({authenticated:true,me,posts:feed.results,friends:friends.results});
  }catch(e){console.error(e);return json({error:"Couldn't load Blub. Please try again."},500)}}
@@ -46,6 +61,26 @@ export async function POST(req:Request){try{
  await db().prepare("INSERT INTO users (id,name,handle,bio,created_at) VALUES (?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,handle=excluded.handle,bio=excluded.bio").bind(u.userId,name,handle,bio,Date.now()).run();return json({ok:true});
  }
  if(!me)return json({error:"Create your profile first"},400);
+ if(["like","unlike","comment"].includes(data.action)){
+   if(typeof data.id!=="string")return json({error:"Post not found"},404);
+   const access=[data.id,u.userId,u.userId,u.userId,u.userId];
+   const allowed=`FROM posts p WHERE p.id=? AND ${visible}`;
+   let write;
+   if(data.action==="comment"){
+     const body=typeof data.body==="string"?data.body.trim():"";
+     if(!body||body.length>1000)return json({error:"Write a comment of up to 1,000 characters"},400);
+     if(typeof data.requestId!=="string"||!/^[-a-zA-Z0-9]{1,64}$/.test(data.requestId))return json({error:"Invalid comment request"},400);
+     write=db().prepare(`INSERT INTO comments(post,author,body,request_id) SELECT p.id,?,?,? ${allowed}
+       ON CONFLICT(post,author,request_id) DO NOTHING`).bind(u.userId,body,data.requestId,...access);
+   }else if(data.action==="like"){
+     write=db().prepare(`INSERT INTO likes(post,author) SELECT p.id,? ${allowed}
+       ON CONFLICT(post,author) DO NOTHING`).bind(u.userId,...access);
+   }else{
+     write=db().prepare(`DELETE FROM likes WHERE author=? AND post IN (SELECT p.id ${allowed})`).bind(u.userId,...access);
+   }
+   const [post]=await db().batch([db().prepare(`SELECT p.id ${allowed}`).bind(...access),write]);
+   return post.results.length?json({ok:true}):json({error:"Post not found"},404);
+ }
  if(data.action==="request"){
  if(data.user===u.userId)return json({error:"That's you!"},400);
  if(!await db().prepare("SELECT id FROM users WHERE id=?").bind(data.user).first())return json({error:"Person not found"},404);

@@ -392,3 +392,29 @@ input::placeholder, textarea::placeholder { color: var(--subtle); opacity: 1; }
 @media (prefers-reduced-motion: reduce) {
   .reaction-burst { display: none; }
 }
+
+.post-media { position: relative; touch-action: manipulation; }
+.like-pulse {
+  position: absolute; top: 50%; left: 50%; width: min(27%, 112px);
+  transform: translate(-50%, -50%); pointer-events: none;
+  filter: drop-shadow(0 4px 9px #20132788);
+  animation: chrome-like 780ms ease-out both;
+}
+@keyframes chrome-like {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.45); }
+  24% { opacity: 1; transform: translate(-50%, -50%) scale(1.12); }
+  43%, 72% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(.97); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .like-pulse { animation: chrome-still 600ms both; }
+  @keyframes chrome-still { from, to { opacity: 1; } }
+}
+.post-actions, .post-comments form { display: flex; align-items: center; gap: 12px; }
+.post-actions, .post-comments { padding: 0 20px; }
+.post-actions button { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; color: var(--muted); }
+.post-actions button[aria-pressed=true] { color: #f3b6cc; }
+.post-comments form { padding-block: 8px; }
+.post-comments input { min-width: 0; flex: 1; }
+.post-comments p { overflow-wrap: anywhere; font-size: .95rem; }
+.post-comments b { color: var(--accent); }

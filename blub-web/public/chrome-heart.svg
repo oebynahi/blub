@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 112">
+  <defs>
+    <linearGradient id="metal" x1=".25" y1="0" x2=".65" y2="1" gradientUnits="objectBoundingBox">
+      <stop stop-color="#493e62"/><stop offset=".12" stop-color="#bac6e7"/>
+      <stop offset=".25" stop-color="#fff"/><stop offset=".38" stop-color="#adb1ca"/>
+      <stop offset=".43" stop-color="#504658"/><stop offset=".51" stop-color="#24202f"/>
+      <stop offset=".61" stop-color="#c09dd5"/><stop offset=".73" stop-color="#fff6ef"/>
+      <stop offset=".82" stop-color="#8d829e"/><stop offset="1" stop-color="#473f63"/>
+    </linearGradient>
+    <radialGradient id="rim" cx=".42" cy=".35" r=".68">
+      <stop offset=".63" stop-color="#6f5f91" stop-opacity="0"/>
+      <stop offset=".88" stop-color="#322940" stop-opacity=".56"/>
+      <stop offset="1" stop-color="#e8e9ff" stop-opacity=".85"/>
+    </radialGradient>
+    <path id="heart" d="M60 103C52 101 7 70 5 39 3 9 37 -4 55 16Q60 23 65 16C86 -5 119 10 115 40 112 66 75 97 60 103Z"/>
+  </defs>
+  <use href="#heart" fill="url(#metal)" stroke="#dcd7ed" stroke-width="1.8"/>
+  <use href="#heart" fill="url(#rim)"/>
+  <path d="M12 34C14 14 32 7 45 16 29 12 20 23 16 34Q13 39 12 34ZM71 22Q86 4 101 20 86 12 73 25Z" fill="#fff" opacity=".85"/>
+  <path d="M17 62Q35 87 60 98 45 87 17 62Z" fill="#fff2e9" opacity=".9"/>
+</svg>

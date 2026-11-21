@@ -72,12 +72,42 @@ assert request(users[1], path=photo)[0] == 200
 assert not feed(users[2])['posts']
 assert request(users[2], path=photo)[0] == 404
 assert act(users[1], action='delete', id=posts[0]['id'])[0] == 404
+post_id = posts[0]['id']
+thread = '/api/blub?action=comments&id=' + post_id
+def comment(user, body, key):
+    return act(user, action='comment', id=post_id, body=body, requestId=key)
+
+assert act(users[2], action='like', id=post_id)[0] == 404
+assert comment(users[2], 'private', 'outside')[0] == 404
+assert request(users[2], path=thread)[0] == 404
+for _ in range(2):
+    assert act(users[1], action='like', id=post_id)[0] == 200
+    assert comment(users[1], ' Nice photo! ', 'first')[0] == 200
+liked = feed(users[1])['posts'][0]
+assert (liked['liked'], liked['like_count'], liked['comment_count']) == (1, 1, 1)
+assert feed(users[0])['posts'][0]['liked'] == 0
+assert comment(users[1], '  ', 'empty')[0] == 400
+assert comment(users[1], 'x' * 1001, 'long')[0] == 400
+for index in range(30):
+    assert comment(users[0], 'Reply ' + str(index), 'reply-' + str(index))[0] == 200
+page = request(users[1], path=thread)[1]
+assert page['more'] and len(page['comments']) == 30
+assert page['comments'][-1]['body'] == 'Reply 29'
+earlier = request(users[0], path=thread + '&before=' + str(page['comments'][0]['id']))[1]
+assert not earlier['more'] and earlier['comments'][0]['body'] == 'Nice photo!'
+assert earlier['comments'][0]['handle'] == users[1]
+assert act(users[1], action='unlike', id=post_id)[0] == 200
+assert feed(users[0])['posts'][0]['like_count'] == 0
+assert act(users[0], action='like', id=post_id)[0] == 200
 assert act(users[1], action='remove', id=friendship)[0] == 200
+assert request(users[1], path=thread)[0] == 404
+assert comment(users[1], 'revoked', 'revoked')[0] == 404
 assert not feed(users[1])['posts']
 assert request(users[1], path=photo)[0] == 404
 for p in posts:
     assert act(users[0], action='delete', id=p['id'])[0] == 200
 assert not feed(users[0])['posts']
 assert request(users[0], path=photo)[0] == 404
-print('PASS: accounts, validation, reciprocal requests, recipient-only acceptance, chronological posts, private photos, revocation, owner-only deletion.')
+assert request(users[0], path=thread)[0] == 404
+print('PASS: likes, comments, pagination, interaction privacy, accounts, validation, reciprocal requests, recipient-only acceptance, chronological posts, private photos, revocation, owner-only deletion.')
 print('Only disposable profiles remain in the LOCAL test database.')
