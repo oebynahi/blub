@@ -420,3 +420,27 @@ input::placeholder, textarea::placeholder { color: var(--subtle); opacity: 1; }
 .post-comments input { min-width: 0; flex: 1; }
 .post-comments p { overflow-wrap: anywhere; font-size: .95rem; }
 .post-comments b { color: var(--accent); }
+
+.feed-loader {
+  position: fixed; inset: 0; z-index: 80;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 20px; background: var(--bg, #08090c);
+}
+.feed-loader img { animation: feed-logo-turn 1.6s linear infinite; }
+@keyframes feed-logo-turn { to { transform: rotate(1turn); } }
+.feed-loader progress {
+  appearance: none; width: 128px; height: 4px; border: 0;
+  border-radius: 4px; overflow: hidden; background: #33303d;
+}
+.feed-loader progress::-webkit-progress-bar { background: #33303d; }
+.feed-loader progress::-webkit-progress-value { background: var(--gradient); }
+.feed-loader progress::-moz-progress-bar { background: var(--gradient); }
+.feed-loader progress:indeterminate {
+  background: var(--gradient) left center / 42% 100% no-repeat, #33303d;
+  animation: feed-progress 1.1s ease-in-out infinite alternate;
+}
+.feed-loader progress:indeterminate::-webkit-progress-bar { background: transparent; }
+@keyframes feed-progress { to { background-position: right center; } }
+@media (prefers-reduced-motion: reduce) {
+  .feed-loader img, .feed-loader progress { animation: none; }
+}

@@ -9,10 +9,11 @@ type Comment = { id: number; handle: string; body: string };
 type Props = {
   post: Post;
   busy: boolean;
+  onPhotoSettled?: () => void;
   act: (body: Record<string, string>) => Promise<boolean>;
 };
 
-export function PostInteractions({ post, busy, act }: Props) {
+export function PostInteractions({ post, busy, act, onPhotoSettled }: Props) {
   preload("/chrome-heart.png", { as: "image" });
   const [pulse, setPulse] = useState(0);
   const [open, setOpen] = useState(false);
@@ -65,7 +66,7 @@ export function PostInteractions({ post, busy, act }: Props) {
   return <>
     <div className="post-media" onDoubleClick={() => like(false)}>
       <img className="post-photo" src={"/api/blub?action=photo&id=" + post.id}
-        alt={post.caption || "Photo shared with friends"} loading="lazy"/>
+        alt={post.caption || "Photo shared with friends"} loading={onPhotoSettled ? "eager" : "lazy"} onLoad={onPhotoSettled} onError={onPhotoSettled}/>
       {pulse > 0 && <img key={pulse} className="like-pulse" src="/chrome-heart.png" alt=""
         onAnimationEnd={() => setPulse(0)}/>}
     </div>
