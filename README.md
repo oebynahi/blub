@@ -167,3 +167,11 @@ All writes require identity. Posting and friendships also require a profile. Aut
 - **Missing Wrangler config:** run `npm run build` before database commands or `npm start`.
 - **Install fails:** check the Node version and network access, then rerun `npm run install:ci`. Avoid changing the lockfile just to bypass an installation problem.
 - **Database schema differs from a teammate’s:** check which migrations each person has applied. Local state is not shared between machines.
+
+## iPhone app
+
+Open `blub-ios/Blub.xcodeproj` in Xcode, select the **Blub** scheme and an iPhone simulator, then press **⌘R**. The SwiftUI target supports iOS 17 and later. Running on a physical iPhone also requires selecting your Apple development team in **Signing & Capabilities**.
+
+This first iOS build displays the chronological feed, captions, handles, and private photos. Pull down to refresh. **Sign in to Blub** opens the hosted account flow. Use the same invited account as on the website. If you need a profile, complete it in the hosted screen and tap **Done**. The app uses the site's session cookies for native API requests. It keeps private photo responses out of the disk cache. Signing out clears the app's local session.
+
+The iOS build points to the hosted Blub backend. Simulator builds run independently of the website's build and deployment.
