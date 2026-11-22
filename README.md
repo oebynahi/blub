@@ -172,6 +172,8 @@ All writes require identity. Posting and friendships also require a profile. Aut
 
 Open `blub-ios/Blub.xcodeproj` in Xcode, select the **Blub** scheme and an iPhone simulator, then press **⌘R**. The SwiftUI target supports iOS 17 and later. Running on a physical iPhone also requires selecting your Apple development team in **Signing & Capabilities**.
 
-This first iOS build displays the chronological feed, captions, handles, and private photos. Pull down to refresh. **Sign in to Blub** opens the hosted account flow. Use the same invited account as on the website. If you need a profile, complete it in the hosted screen and tap **Done**. The app uses the site's session cookies for native API requests. It keeps private photo responses out of the disk cache. Signing out clears the app's local session.
+The native app has Feed, Friends, and Profile tabs. Choose **Create an account** to authenticate with an invited ChatGPT account and create a Blub profile, or **Sign in to Blub** to use an existing one. Both use Blub’s existing hosted identity and privacy rules. Sign out from the Profile menu.
+
+Use the plus in Feed to choose and share a photo. Double-tap a photo for the chrome heart and haptic, or use the heart and comment controls. Friends supports handle search, requests and removal. Profile includes a paginated photo grid, editing, profile pictures and owner-only post deletion. The app keeps private photo responses out of the disk cache.
 
 The iOS build points to the hosted Blub backend. Simulator builds run independently of the website's build and deployment.
