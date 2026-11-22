@@ -44,7 +44,11 @@ export async function GET(req:Request){try{
    return json({comments:page.results.slice(0,30).reverse(),more:page.results.length>30});
  }
  if(action==="search"){const q=(url.searchParams.get("q")||"").replace(/^@/,"").toLowerCase();if(q.length<2)return json({users:[]});const rows=await db().prepare("SELECT id,name,handle,bio,avatar FROM users WHERE id!=? AND substr(handle,1,length(?))=? LIMIT 20").bind(u.userId,q,q).all();return json({users:rows.results});}
- const postFields=`SELECT p.id,p.caption,p.created_at,u.name,u.handle,u.avatar,p.author,
+ // Read only the two newest comments for each visible feed post using the post/id index.
+ const previewField=action==="mine"?"":`(SELECT json_group_array(json_object('id',id,'handle',handle,'body',body))
+   FROM (SELECT c.id, u.handle, substr(c.body,1,180) AS body FROM comments c JOIN users u ON u.id=c.author
+         WHERE c.post=p.id ORDER BY c.id DESC LIMIT 2)) AS previews_json,`;
+ const postFields=`SELECT ${previewField} p.id,p.caption,p.created_at,u.name,u.handle,u.avatar,p.author,
    (SELECT count(*) FROM likes WHERE post=p.id) AS like_count,
    EXISTS(SELECT 1 FROM likes WHERE post=p.id AND author=?) AS liked,
    (SELECT count(*) FROM comments WHERE post=p.id) AS comment_count FROM posts p JOIN users u ON u.id=p.author`;
@@ -57,7 +61,8 @@ export async function GET(req:Request){try{
  }
  const feed=await db().prepare(`${postFields} WHERE ${visible} ORDER BY p.created_at DESC,p.id DESC LIMIT 100`).bind(u.userId,u.userId,u.userId,u.userId,u.userId).all();
  const friends=await db().prepare("SELECT f.*,u.name,u.handle,u.bio,u.avatar FROM friendships f JOIN users u ON u.id=CASE WHEN f.sender=? THEN f.recipient ELSE f.sender END WHERE f.sender=? OR f.recipient=? ORDER BY f.created_at DESC").bind(u.userId,u.userId,u.userId).all();
- return json({authenticated:true,me,posts:feed.results,friends:friends.results});
+ const posts=feed.results.map(({previews_json,...post})=>({...post,preview_comments:JSON.parse(String(previews_json)).reverse()}));
+ return json({authenticated:true,me,posts,friends:friends.results});
  }catch(e){console.error(e);return json({error:"Couldn't load Blub. Please try again."},500)}}
 export async function POST(req:Request){try{
  const origin=req.headers.get("origin");if(origin&&origin!==new URL(req.url).origin)return json({error:"Request not allowed"},403);

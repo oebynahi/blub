@@ -473,3 +473,34 @@ input::placeholder, textarea::placeholder { color: var(--subtle); opacity: 1; }
   background: linear-gradient(150deg, #303041, #1d1d28 75%) padding-box,
     var(--indigo-chrome) border-box;
 }
+
+.comment-preview { padding: 6px; color: var(--muted); font-size: .875rem; }
+.comment-preview p { margin: 3px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.comment-preview b { color: var(--text); font-weight: 550; }
+
+@media (max-width:600px) {
+  .app-shell:has(.feed-pages > article) {
+    height: 100dvh; display: flex; flex-direction: column;
+    padding-bottom: max(76px, calc(62px + env(safe-area-inset-bottom)));
+  }
+  .app-shell:has(.feed-pages > article) > main,
+  .content-grid:has(.feed-pages > article),
+  .main-column:has(.feed-pages > article) {
+    display: flex; flex-direction: column; flex: 1; min-height: 0; width: 100%;
+  }
+  .content-grid:has(.feed-pages > article) { padding-block: 0; }
+  .app-shell:has(.feed-pages > article) .topbar,
+  .main-column:has(.feed-pages > article) > :is(.page-heading,.composer,.feed-label,.end-note) { display: none; }
+  .feed-pages:has(>article) {
+    flex: 1; min-height: 0; overflow-y: auto; scroll-snap-type: y mandatory;
+  }
+  .feed-pages > .photo-card {
+    height: 100%; margin: 0; display: flex; flex-direction: column;
+    scroll-snap-align: start; scroll-snap-stop: always; overflow-y: auto;
+  }
+  .feed-pages .post-media { flex: 1; min-height: 100px; }
+  .feed-pages .post-photo { width: 100%; height: 100%; max-height: none; min-height: 0; object-fit: contain; }
+  .feed-pages .photo-toolbar,.feed-pages .comment-preview { flex: none; }
+  .feed-pages .caption { max-height: 4.5em; overflow-y: auto; flex: none; }
+  .feed-pages .post-comments { max-height: 45%; overflow-y: auto; flex: none; }
+}

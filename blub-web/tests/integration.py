@@ -112,6 +112,10 @@ for index in range(30):
 page = request(users[1], path=thread)[1]
 assert page['more'] and len(page['comments']) == 30
 assert page['comments'][-1]['body'] == 'Reply 29'
+preview = feed(users[1])['posts'][0]['preview_comments']
+assert [c['body'] for c in preview] == ['Reply 28', 'Reply 29']
+assert [c['handle'] for c in preview] == [users[0], users[0]]
+assert feed(users[1])['posts'][1]['preview_comments'] == []
 earlier = request(users[0], path=thread + '&before=' + str(page['comments'][0]['id']))[1]
 assert not earlier['more'] and earlier['comments'][0]['body'] == 'Nice photo!'
 assert earlier['comments'][0]['handle'] == users[1]

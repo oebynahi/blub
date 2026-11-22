@@ -41,10 +41,12 @@ struct AvatarView: View {
 struct PostCard: View {
     let post: BlubPost
     let model: AppModel
+    var paged = false
     var changed: () async -> Void = {}
     @Environment(\.accessibilityReduceMotion) private var reduced
     @State private var busy = false
     @State private var comments = false
+    @State private var fullCaption = false
     @State private var confirm = false
     @State private var pulse = 0
     @State private var showHeart = false
@@ -52,7 +54,7 @@ struct PostCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             PrivatePhoto(id: post.id, service: model.service)
-                .frame(maxWidth: .infinity, minHeight: 140)
+                .frame(maxWidth: .infinity, minHeight: paged ? 0 : 140, maxHeight: paged ? .infinity : nil)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 .overlay {
                     if showHeart {
@@ -78,13 +80,33 @@ struct PostCard: View {
                     Menu { Button("Delete post", role: .destructive) { confirm = true } } label: { Image(systemName: "ellipsis") }.accessibilityLabel("Post options")
                 }
             }.font(.subheadline)
-            if !post.caption.isEmpty { Text(post.caption) }
+            if !post.caption.isEmpty {
+                if paged {
+                    Button { fullCaption = true } label: { Text(post.caption).lineLimit(2).multilineTextAlignment(.leading) }
+                        .foregroundStyle(.primary).accessibilityHint("Opens the full caption")
+                } else { Text(post.caption) }
+            }
+            if let previews = post.preview_comments, !previews.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(previews) { comment in
+                        (Text("@"+comment.handle+" ").bold() + Text(comment.body))
+                            .font(.footnote).lineLimit(1).foregroundStyle(.secondary)
+                    }
+                }
+            }
             if let error { Text(error).font(.footnote).foregroundStyle(.pink) }
         }.padding(12).chromeCard()
         .sensoryFeedback(.impact(weight: .light), trigger: pulse)
         .task(id: pulse) {
             guard pulse > 0 else { return }
             do { try await Task.sleep(for: .milliseconds(680)); withAnimation(.easeOut(duration: 0.2)) { showHeart = false } } catch {}
+        }
+        .sheet(isPresented: $fullCaption) {
+            NavigationStack {
+                ScrollView { Text(post.caption).frame(maxWidth: .infinity, alignment: .leading).padding() }
+                    .navigationTitle("Caption").navigationBarTitleDisplayMode(.inline)
+                    .toolbar { Button("Done") { fullCaption = false } }
+            }.presentationDetents([.medium, .large])
         }
         .sheet(isPresented: $comments) { NavigationStack { CommentsScreen(post: post, model: model, changed: changed) } }
         .confirmationDialog("Delete this post and its comments?", isPresented: $confirm, titleVisibility: .visible) {

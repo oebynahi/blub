@@ -6,7 +6,7 @@ import { Heart, MessageCircle, Trash2 } from "lucide-react";
 
 import { Avatar } from "./avatar";
 
-export type Post = { name: string; handle: string; author: string; avatar?: string | null; created_at: number; id: string; caption: string; liked: number; like_count: number; comment_count: number };
+export type Post = { name: string; handle: string; author: string; avatar?: string | null; created_at: number; id: string; caption: string; liked: number; like_count: number; comment_count: number; preview_comments?: Comment[] };
 type Comment = { id: number; handle: string; body: string };
 type Props = {
   post: Post;
@@ -89,6 +89,9 @@ export function PostInteractions({ post, busy, act, onPhotoSettled, onDelete }: 
       {onDelete && <button type="button" className="icon-button" aria-label="Delete post" onClick={onDelete} disabled={busy}><Trash2 size={16}/></button>}
     </div>
     {post.caption && <p className="caption">{post.caption}</p>}
+    {!open && Boolean(post.preview_comments?.length) && <div className="comment-preview" aria-label="Recent comments">
+      {post.preview_comments?.map(comment => <p key={comment.id}><b>@{comment.handle}</b> {comment.body}</p>)}
+    </div>}
     {open && <section className="post-comments" aria-label="Post comments">
       {more && <button className="text-button" disabled={locked} onClick={() => readComments(comments[0].id)}>Earlier comments</button>}
       {comments.map(comment => <p key={comment.id}><b>@{comment.handle}</b> {comment.body}</p>)}

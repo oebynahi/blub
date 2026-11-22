@@ -105,6 +105,18 @@ private struct BlubLoadingView: View {
     }
 }
 
+private struct SinglePostPaging: ScrollTargetBehavior {
+    func updateTarget(_ target: inout ScrollTarget, context: TargetContext) {
+        PagingScrollTargetBehavior().updateTarget(&target, context: context)
+        let height = context.containerSize.height
+        guard height > 0 else { return }
+        let start = (context.originalTarget.rect.minY / height).rounded()
+        let proposed = (target.rect.minY / height).rounded()
+        let next = min(start + 1, max(start - 1, proposed))
+        target.rect.origin.y = max(0, min(next * height, context.contentSize.height - height))
+    }
+}
+
 struct MainTabs: View {
     let model: AppModel
     let me: FeedResponse.Profile
@@ -112,17 +124,26 @@ struct MainTabs: View {
     var body: some View {
         TabView {
             NavigationStack {
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 16) {
-                        Wordmark(size: 32)
-                        Text("Your feed.").font(.largeTitle.bold()).foregroundStyle(sunset)
-                        if model.data?.posts?.isEmpty == true {
-                            ContentUnavailableView("No photos yet", systemImage: "photo.on.rectangle", description: Text("Post a photo or add a friend."))
-                        }
-                        ForEach(model.data?.posts ?? []) { post in PostCard(post: post, model: model) }
-                    }.padding()
-                }.background(ink).refreshable { await model.load() }
-                .toolbar { Button { compose = true } label: { Label("Post a photo", systemImage: "plus") } }
+                ScrollView(.vertical) {
+                    if let posts = model.data?.posts, !posts.isEmpty {
+                        LazyVStack(spacing: 0) {
+                            ForEach(posts) { post in
+                                PostCard(post: post, model: model, paged: true)
+                                    .padding(.horizontal, 12).padding(.vertical, 6)
+                                    .containerRelativeFrame(.vertical)
+                            }
+                        }.scrollTargetLayout()
+                    } else {
+                        ContentUnavailableView("No photos yet", systemImage: "photo.on.rectangle",
+                            description: Text("Post a photo or add a friend."))
+                    }
+                }
+                .scrollTargetBehavior(SinglePostPaging())
+                .scrollIndicators(.hidden).background(ink).refreshable { await model.load() }
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) { Wordmark(size: 25) }
+                    ToolbarItem(placement: .topBarTrailing) { Button { compose = true } label: { Label("Post a photo", systemImage: "plus") } }
+                }
             }.tabItem { Label("Feed", systemImage: "house") }
             NavigationStack { FriendsScreen(model: model, me: me) }.tabItem { Label("Friends", systemImage: "person.2") }
             NavigationStack { ProfileScreen(model: model, me: me) }.tabItem { Label("Profile", systemImage: "person.crop.circle") }

@@ -8,6 +8,7 @@ struct BlubPost: Decodable, Identifiable, Hashable {
     let author: String
     let avatar: String?
     let liked, like_count, comment_count: Int
+    let preview_comments: [Comment]?
     let created_at: Double
 }
 
@@ -23,7 +24,7 @@ struct Friendship: Decodable, Identifiable {
     let id, sender, recipient, status, name, handle: String
     let avatar: String?
 }
-struct Comment: Decodable, Identifiable { let id: Int; let body, handle: String }
+struct Comment: Decodable, Identifiable, Hashable { let id: Int; let body, handle: String }
 struct CommentPage: Decodable { let comments: [Comment]; let more: Bool }
 struct PostPage: Decodable { let posts: [BlubPost]; let more: Bool }
 struct SearchPage: Decodable { let users: [FeedResponse.Profile] }
