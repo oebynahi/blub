@@ -9,10 +9,10 @@ let ink = Color(red: 0.032, green: 0.035, blue: 0.047)
 let violet = Color(red: 0.76, green: 0.64, blue: 1)
 let sunset = LinearGradient(colors: [violet, Color(red: 1, green: 0.72, blue: 0.59)], startPoint: .leading, endPoint: .trailing)
 extension View {
-    func chromeCard(radius: CGFloat = 22) -> some View {
+    func chromeCard(radius: CGFloat = 22, lineWidth: CGFloat = 1) -> some View {
         background(ink, in: RoundedRectangle(cornerRadius: radius))
             .overlay { RoundedRectangle(cornerRadius: radius).strokeBorder(
-                AngularGradient(colors: [.indigo.opacity(0.5), .white.opacity(0.8), .gray.opacity(0.3), .indigo, .white.opacity(0.65), .indigo.opacity(0.5)], center: .center), lineWidth: 1).allowsHitTesting(false) }
+                AngularGradient(colors: [.indigo.opacity(0.5), .white.opacity(0.8), .gray.opacity(0.3), .indigo, .white.opacity(0.65), .indigo.opacity(0.5)], center: .center), lineWidth: lineWidth).allowsHitTesting(false) }
     }
 }
 
@@ -140,9 +140,15 @@ struct MainTabs: View {
                 }
                 .scrollTargetBehavior(SinglePostPaging())
                 .scrollIndicators(.hidden).background(ink).refreshable { await model.load() }
-                .toolbar {
-                    ToolbarItem(placement: .topBarLeading) { Wordmark(size: 25) }
-                    ToolbarItem(placement: .topBarTrailing) { Button { compose = true } label: { Label("Post a photo", systemImage: "plus") } }
+                .toolbar(.hidden, for: .navigationBar)
+                .safeAreaInset(edge: .top, spacing: 0) {
+                    HStack {
+                        Wordmark(size: 32).fixedSize()
+                        Spacer()
+                        Button { compose = true } label: {
+                            Image(systemName: "plus").frame(width: 44, height: 44)
+                        }.accessibilityLabel("Post a photo")
+                    }.padding(.horizontal, 16).padding(.vertical, 4).background(ink)
                 }
             }.tabItem { Label("Feed", systemImage: "house") }
             NavigationStack { FriendsScreen(model: model, me: me) }.tabItem { Label("Friends", systemImage: "person.2") }

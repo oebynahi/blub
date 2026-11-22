@@ -43,6 +43,7 @@ struct PostCard: View {
     let model: AppModel
     var paged = false
     var changed: () async -> Void = {}
+    @Environment(\.displayScale) private var displayScale
     @Environment(\.accessibilityReduceMotion) private var reduced
     @State private var busy = false
     @State private var comments = false
@@ -95,7 +96,7 @@ struct PostCard: View {
                 }
             }
             if let error { Text(error).font(.footnote).foregroundStyle(.pink) }
-        }.padding(12).chromeCard()
+        }.padding(10).chromeCard(lineWidth: 1 / displayScale)
         .sensoryFeedback(.impact(weight: .light), trigger: pulse)
         .task(id: pulse) {
             guard pulse > 0 else { return }
