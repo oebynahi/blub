@@ -67,12 +67,14 @@ export function PostInteractions({ post, busy, act, onPhotoSettled, onDelete }: 
   }
 
   return <article className="post photo-card">
-    <div className="post-media" onDoubleClick={() => like(false)}>
-      <img className="post-photo" src={"/api/blub?action=photo&id=" + post.id}
-        alt={post.caption || "Photo shared with friends"} loading={onPhotoSettled ? "eager" : "lazy"} onLoad={onPhotoSettled} onError={onPhotoSettled}/>
+    <div className="photo-frame">
       <div className="photo-byline"><b>{post.name}</b></div>
-      {pulse > 0 && <img key={pulse} className="like-pulse" src="/chrome-heart.png" alt=""
-        onAnimationEnd={() => setPulse(0)}/>}
+      <div className="post-media" onDoubleClick={() => like(false)}>
+        <img className="post-photo" src={"/api/blub?action=photo&id=" + post.id}
+          alt={post.caption || "Photo shared with friends"} loading={onPhotoSettled ? "eager" : "lazy"} onLoad={onPhotoSettled} onError={onPhotoSettled}/>
+        {pulse > 0 && <img key={pulse} className="like-pulse" src="/chrome-heart.png" alt=""
+          onAnimationEnd={() => setPulse(0)}/>}
+      </div>
     </div>
     <div className="photo-toolbar">
       <Avatar name={post.name} id={post.author} avatar={post.avatar}/>

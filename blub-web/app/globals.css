@@ -17,6 +17,10 @@
   --muted: #c7cad8;
   --line: #444957;
   --accent: #c7a1e6;
+  --indigo-chrome: conic-gradient(from 210deg at 46% 53%,
+    #353249, #8883bc 9%, #eef1ff 13%, #575577 18%, #262431 29%,
+    #7779af 44%, #dddfff 49%, #55516d 54%, #292839 67%,
+    #9594cc 80%, #edeaf9 84%, #5a567e 90%, #353249);
   --gradient: linear-gradient(110deg, #ae70ff 8%, #cc8af5 36%, #ffab86 69%, #ffce9f 96%);
 }
 * { box-sizing: border-box; }
@@ -152,7 +156,7 @@ h1 { font-size: clamp(2.2rem,4vw,3.25rem); font-weight: 500; line-height: 1.13; 
 .list-heading { font-size: 1.25rem; font-weight: 500; margin: 35px 0 12px; letter-spacing: -.4px; }
 .section-title h2 { font-size: 1.125rem; font-weight: 550; margin: 0; }
 .section-title>span { font-size: .875rem; color: var(--subtle); }
-.profile-card { display: flex; gap: 17px; align-items: center; background: linear-gradient(130deg,#2e233b,#35262b); border: 1px solid var(--line); border-radius: 18px; padding: 25px; margin-bottom: 30px; }
+.profile-card { display: flex; gap: 17px; align-items: center; background: linear-gradient(#070709, #070709) padding-box, var(--indigo-chrome) border-box; border: 2px solid transparent; border-radius: 18px; padding: 25px; margin-bottom: 30px; }
 .profile-card>div { flex: 1; min-width: 0; }
 .profile-card h2 { font-size: 1.5rem; font-weight: 550; margin-bottom: 7px; overflow-wrap: anywhere; letter-spacing: -.5px; }
 .profile-card p { font-size: .875rem; color: var(--muted); margin-bottom: 6px; overflow-wrap: anywhere; }
@@ -453,8 +457,21 @@ input::placeholder, textarea::placeholder { color: var(--subtle); opacity: 1; }
 .photo-card { padding:10px; border-radius:26px; background:linear-gradient(160deg,#33303a,#16171c 64%); box-shadow:inset 0 1px 0 #ffffff1f,0 12px 26px #0003; }
 .photo-card .post-media { overflow:hidden; border-radius:18px; background:#101014; }
 .photo-card .post-photo { min-height:150px; }
-.photo-byline { position:absolute; inset:0 0 auto; text-align:center; padding:17px 14px 34px; color:white; background:linear-gradient(#0504099c,transparent); pointer-events:none; }
+.photo-frame { position:relative; }
+.photo-byline { z-index:1; border-radius:18px 18px 0 0; position:absolute; inset:0 0 auto; text-align:center; padding:17px 14px 34px; color:white; background:linear-gradient(#0504099c,transparent); pointer-events:none; }
 .photo-byline b { font-size:clamp(1.15rem,4vw,1.65rem); font-weight:550; letter-spacing:-.035em; overflow-wrap:anywhere; text-shadow:0 1px 5px #0009; }
+@media (min-width: 821px) {
+  .photo-frame { display:grid; grid-template-columns:30px minmax(0,1fr); }
+  .photo-byline {
+    position:relative; inset:auto; align-self:stretch; min-height:0; overflow:hidden;
+    display:grid; place-items:center; padding:12px 0; background:none; color:var(--muted);
+    writing-mode:vertical-rl; transform:rotate(180deg);
+  }
+  .photo-byline b {
+    max-width:100%; font-size:.875rem; font-weight:500; letter-spacing:.02em;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-shadow:none;
+  }
+}
 .photo-toolbar { display:flex; align-items:center; gap:9px; padding:14px 4px 4px; }
 .photo-credit { min-width:0; flex:1; }
 .photo-credit b,.photo-credit time { display:block; }
@@ -464,3 +481,11 @@ input::placeholder, textarea::placeholder { color: var(--subtle); opacity: 1; }
 .photo-toolbar .post-actions button { padding:0 8px; gap:5px; }
 .photo-card .caption { padding:10px 6px 2px; }
 @media(max-width:400px){.photo-toolbar{gap:5px}.photo-toolbar .avatar{width:30px;height:30px}.photo-toolbar .post-actions button{padding:0 6px}}
+
+
+/* Narrow reflective edges echo the logo while leaving the control faces dark. */
+.composer-camera, .heading-orbit, .how-step > span {
+  border: 1px solid transparent;
+  background: linear-gradient(150deg, #303041, #1d1d28 75%) padding-box,
+    var(--indigo-chrome) border-box;
+}
