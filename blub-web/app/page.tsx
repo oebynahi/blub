@@ -1,7 +1,7 @@
 import { Camera, Check, Clock3, Sparkles, Lock, Plus, Users } from "lucide-react";
 import { chatGPTSignInPath, getChatGPTUser } from "./chatgpt-auth";
 
-import { OpenBlubLink, TiltPreview } from "./home-interactions";
+import { OpenBlubLink, ReactiveLogoPreview } from "./home-interactions";
 
 export const dynamic = "force-dynamic";
 
@@ -35,13 +35,13 @@ export default async function LandingPage() {
             <div className="hero-footnote"><Lock size={14}/>Your photos stay between accepted friends.</div>
           </div>
 
-          <TiltPreview>
+          <ReactiveLogoPreview>
             <div className="preview-card">
               <div className="preview-header"><span className="preview-avatar">Y</span><span><b>Your photo</b><small>Post preview</small></span><Lock size={15}/></div>
               <div className="preview-art" aria-hidden="true"><img className="chrome-sculpture" src="/chrome-mark.png" alt="" width="600" height="600"/></div>
               <div className="preview-caption"><span>Shared with friends</span><Check size={16}/></div>
             </div>
-          </TiltPreview>
+          </ReactiveLogoPreview>
         </section>
 
         <section className="how-section" id="how-it-works" aria-labelledby="how-title">
