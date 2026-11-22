@@ -10,7 +10,7 @@ Blub is a mobile-friendly, friends-only photo app. The website has a separate ho
 - Read a chronological feed of your posts and accepted friends’ posts, newest first.
 - Remove friends and delete your own posts. Photo access is checked on the server.
 
-The feed currently returns up to 100 visible posts. People who can see a post can like it and read or leave comments. Names, handles, and bios are searchable by signed-in users; photos require friendship. Removing a friend revokes access in Blub, but cannot remove copies someone already saved. Uploaded photos do not have their EXIF metadata stripped yet.
+The feed currently returns up to 100 visible posts. People who can see a post can like it and read or leave comments. Profile pictures are optional and visible alongside searchable profiles. Names, handles, and bios are searchable by signed-in users; photos require friendship. Removing a friend revokes access in Blub, but cannot remove copies someone already saved. Uploaded photos do not have their EXIF metadata stripped yet.
 
 ## Stack and repository layout
 
@@ -60,6 +60,7 @@ The build generates `dist/server/wrangler.json`, including the local `DB` and `B
 node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0000_clear_vermin.sql
 node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0001_fine_dark_phoenix.sql
 node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0002_post_interactions.sql
+node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0003_profile_pictures.sql
 ```
 
 These commands affect only local state. Do not add `--remote`. They execute SQL files directly and do not track which files you have applied; record the last migration you ran and apply only new ones afterward. A “table already exists” error usually means a migration was replayed.

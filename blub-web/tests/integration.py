@@ -50,11 +50,30 @@ def upload(caption):
     body = (f'--{boundary}\r\nContent-Disposition: form-data; name="caption"\r\n\r\n{caption}\r\n--{boundary}\r\nContent-Disposition: form-data; name="photo"; filename="test.png"\r\nContent-Type: image/png\r\n\r\n'.encode() + png + f'\r\n--{boundary}--\r\n'.encode())
     assert request(users[0], body, content_type='multipart/form-data; boundary=' + boundary)[0] == 200
 
+def avatar_upload(image):
+    boundary = 'AvatarTest'
+    fields = {'action':'profile', 'name':'Test Avatar', 'handle':users[0]}
+    parts = [f'--{boundary}\r\nContent-Disposition: form-data; name="{key}"\r\n\r\n{value}\r\n'.encode()
+             for key,value in fields.items()]
+    parts.extend([f'--{boundary}\r\nContent-Disposition: form-data; name="avatar"; filename="a.png"\r\nContent-Type: image/png\r\n\r\n'.encode(),
+                  image, f'\r\n--{boundary}--\r\n'.encode()])
+    return request(users[0], b''.join(parts), content_type='multipart/form-data; boundary='+boundary)
+
+avatar_bytes = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl2uioAAAAASUVORK5CYII=')
+assert avatar_upload(b'not an image')[0] == 400
+assert avatar_upload(avatar_bytes)[0] == 200
+version = feed(users[0])['me']['avatar']
+avatar_path = '/api/blub?action=avatar&id='+users[0]+'&v='+version
+assert request(users[2], path=avatar_path) == (200, avatar_bytes)
+assert avatar_upload(avatar_bytes)[0] == 200
+assert request(users[2], path=avatar_path)[0] == 404
 upload('First moment')
 time.sleep(.01)
 upload('Second moment')
 posts = feed(users[0])['posts']
 assert [p['caption'] for p in posts] == ['Second moment', 'First moment']
+assert [p['id'] for p in request(users[0], path='/api/blub?action=mine')[1]['posts']] == [p['id'] for p in posts]
+assert not request(users[1], path='/api/blub?action=mine')[1]['posts']
 photo = '/api/blub?action=photo&id=' + posts[0]['id']
 assert request(users[0], path=photo)[0] == 200
 assert not feed(users[1])['posts']
