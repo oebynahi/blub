@@ -12,7 +12,7 @@ async function getPage(after?: Post, signal?: AbortSignal) {
 
 export function ProfileGrid({ busy, act, remove, deleted, me }: {
   busy: boolean; act: (body: Record<string,string>) => Promise<boolean>;
-  remove: (id:string) => void; deleted: string; me: {name:string;handle:string;avatar?:string|null};
+  remove: (id:string) => void; deleted: string; me: {id:string;name:string;handle:string;avatar?:string|null};
 }) {
   const [posts,setPosts] = useState<Post[]>([]);
   const [more,setMore] = useState(false);
@@ -39,12 +39,13 @@ export function ProfileGrid({ busy, act, remove, deleted, me }: {
   }
   if (detail) return <>
     <button className="text-button grid-back" onClick={() => setSelected("")}>Back to grid</button>
-    <PostInteractions post={{...detail,name:me.name,handle:me.handle,avatar:me.avatar}} busy={busy} onDelete={() => remove(detail.id)}
+    <PostInteractions me={me.id} post={{...detail,name:me.name,handle:me.handle,avatar:me.avatar}} busy={busy} onDelete={() => remove(detail.id)}
       act={async body => {
         const ok = await act(body);
         if (ok) setPosts(rows => rows.map(p => {
           if (p.id !== detail.id) return p;
           if (body.action === "comment") return {...p, comment_count:p.comment_count+1};
+          if (body.action === "deleteComment") return {...p,comment_count:Math.max(0,p.comment_count-1)};
           const liked = Number(body.action === "like");
           return {...p, liked, like_count:p.like_count + liked - p.liked};
         }));

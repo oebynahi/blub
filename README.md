@@ -61,6 +61,7 @@ node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1
 node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0001_fine_dark_phoenix.sql
 node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0002_post_interactions.sql
 node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0003_profile_pictures.sql
+node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0004_activity.sql
 ```
 
 These commands affect only local state. Do not add `--remote`. They execute SQL files directly and do not track which files you have applied; record the last migration you ran and apply only new ones afterward. A “table already exists” error usually means a migration was replayed.
@@ -177,3 +178,16 @@ The native app has Feed, Friends, and Profile tabs. Choose **Create an account**
 Use the plus in Feed to choose and share a photo. Double-tap a photo for the chrome heart and haptic, or use the heart and comment controls. Friends supports handle search, requests and removal. Profile includes a paginated photo grid, editing, profile pictures and owner-only post deletion. The app keeps private photo responses out of the disk cache.
 
 The iOS build points to the hosted Blub backend. Simulator builds run independently of the website's build and deployment.
+
+## Activity and delivery
+
+The bell on both clients opens the account’s Activity inbox. Friend requests, acceptances, comments on your photos and grouped likes are recorded with the originating write. Opening the inbox marks the displayed items read across devices. Removing the friendship, comment or post removes dependent activity. Comment authors can delete their own comments from the full thread.
+
+Push and email require server-side provider credentials. Configure these as hosted runtime variables and keep the keys out of Git.
+
+| Channel | Setup | Behavior |
+| --- | --- | --- |
+| iPhone push | Enable Push Notifications for App ID `com.oebynahi.blub` with an Apple Developer team and refresh its provisioning profiles. Set `APNS_TEAM_ID`, `APNS_KEY_ID`, and `APNS_PRIVATE_KEY` (the contents of the APNs .p8 key). Debug uses sandbox APNs; distribution uses production. | Opt in from Activity or after sending a friend request. Comments and requests generate generic lock-screen alerts. Tapping an alert checks account access again. Sign-out detaches the device. |
+| Occasional email | Verify a sender domain in Resend. Set `RESEND_API_KEY` and `BLUB_EMAIL_FROM` to the provider key and verified From address. | Opt in or out from Activity. The first reminder is eligible seven days after opting in. Reminders require new unread activity and are capped at one per week. Email goes to the address from hosted sign-in. |
+
+The Worker declares a ten-minute cron trigger and also checks pending deliveries after API traffic. Verify the hosting deployment installs the trigger before relying on delivery during idle periods. Push jobs retry transient errors and expire after a day. The email dispatcher uses a per-account delivery lease and provider idempotency key. Lock screens and emails omit comment text and private photos. End-to-end external delivery requires a provisioned iPhone and configured provider accounts.

@@ -78,8 +78,19 @@ photo = '/api/blub?action=photo&id=' + posts[0]['id']
 assert request(users[0], path=photo)[0] == 200
 assert not feed(users[1])['posts']
 assert request(users[1], path=photo)[0] == 404
+def inbox(user):
+    return request(user, path='/api/blub?action=activity')[1]
+assert not inbox(users[1])['email']
+assert act(users[1], action='digest', value='on')[0] == 200
+assert inbox(users[1])['email']
+assert act(users[1], action='digest', value='off')[0] == 200
+device = uuid.uuid4().hex * 2
+assert act(users[1], action='device', token=device, environment='sandbox')[0] == 200
 assert act(users[0], action='request', user=users[1])[0] == 200
 assert act(users[1], action='request', user=users[0])[0] == 200
+assert [i['kind'] for i in inbox(users[1])['items']] == ['request']
+assert not inbox(users[0])['items']
+assert act(users[1], action='detach', token=device)[0] == 200
 assert len(feed(users[0])['friends']) == 1
 friendship = feed(users[1])['friends'][0]['id']
 act(users[0], action='accept', id=friendship)
@@ -119,11 +130,27 @@ assert feed(users[1])['posts'][1]['preview_comments'] == []
 earlier = request(users[0], path=thread + '&before=' + str(page['comments'][0]['id']))[1]
 assert not earlier['more'] and earlier['comments'][0]['body'] == 'Nice photo!'
 assert earlier['comments'][0]['handle'] == users[1]
+activity = inbox(users[0])['items']
+assert {item['kind'] for item in activity} == {'like','comment','accepted'} and len(activity) == 3
+assert not inbox(users[1])['items'] and not inbox(users[2])['items']
+assert feed(users[0])['unread']
+assert act(users[2], action='readActivity', ids=str(activity[0]['id']))[0] == 200
+assert feed(users[0])['unread']
+assert act(users[0], action='readActivity', ids=','.join(str(i['id']) for i in activity))[0] == 200
+assert not feed(users[0])['unread']
+cid=str(earlier['comments'][0]['id'])
+assert act(users[0], action='deleteComment', id=post_id, commentId=cid)[0] == 404
+assert act(users[2], action='deleteComment', id=post_id, commentId=cid)[0] == 404
+assert act(users[1], action='deleteComment', id=post_id, commentId=cid)[0] == 200
+assert all(i['kind']!='comment' for i in inbox(users[0])['items'])
+assert feed(users[0])['posts'][0]['comment_count']==30
+assert request(users[2],path='/api/blub?action=post&id='+post_id)[0]==404
 assert act(users[1], action='unlike', id=post_id)[0] == 200
 assert feed(users[0])['posts'][0]['like_count'] == 0
 assert act(users[0], action='like', id=post_id)[0] == 200
 assert act(users[1], action='remove', id=friendship)[0] == 200
 assert request(users[1], path=thread)[0] == 404
+assert not inbox(users[0])['items']
 assert comment(users[1], 'revoked', 'revoked')[0] == 404
 assert not feed(users[1])['posts']
 assert request(users[1], path=photo)[0] == 404

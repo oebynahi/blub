@@ -1,6 +1,6 @@
 # Blub project context
 
-Blub is a friends-only photo app with a mobile-friendly website and a native iPhone client, both using the same accounts and backend. The owner wants the core social features working before pursuing more distinctive features. Make focused changes and preserve the interactions they already like. This handoff reflects the mobile feed work through November 22, 2026. Consult Git history for subsequent changes.
+Blub is a friends-only photo app with a mobile-friendly website and a native iPhone client, both using the same accounts and backend. The owner wants the core social features working before pursuing more distinctive features. Make focused changes and preserve the interactions they already like. This handoff reflects the mobile feed work through November 24, 2026. Consult Git history for subsequent changes.
 
 ## Product and design decisions
 
@@ -38,4 +38,5 @@ Sites supplies the trusted identity on hosted requests. The native app opens the
 
 - Prior checks cover profile/avatar creation, post uploads and deletion, friendship permissions and revocation, likes, comment retries and pagination. Mobile web paging and its desktop breakpoint were exercised in Chrome. Native builds have run on the simulator, and an unsigned device Release build has compiled.
 - Real-device QA for paging, haptics and small-screen layout remains worthwhile. TestFlight distribution has not been established in this project.
+- Activity is shared across web and iOS. The bell includes requests, acceptances, comments and grouped likes. Authors can delete their comments. Optional APNs and weekly unread email delivery require provider credentials; see the README for setup and verification.
 - Independent identity/hosting was discussed as a future option. Current work uses Sites authentication and the shared D1/R2 backend. Photo replies and shared albums were brainstormed, not scheduled.

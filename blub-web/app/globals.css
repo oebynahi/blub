@@ -510,3 +510,8 @@ input::placeholder, textarea::placeholder { color: var(--subtle); opacity: 1; }
   .feed-pages .caption { max-height: 4.5em; overflow-y: auto; flex: none; }
   .feed-pages .post-comments { max-height: 45%; overflow-y: auto; flex: none; }
 }
+
+.activity-bell { position:relative; }
+.activity-bell i { position:absolute; right:2px; top:2px; width:8px; height:8px; border-radius:50%; background:var(--accent); }
+.activity-list label { display:flex; align-items:center; gap:10px; margin-bottom:18px; color:var(--muted); }
+.activity-row { display:block; width:100%; text-align:left; padding:16px 4px; border-bottom:1px solid var(--line); }

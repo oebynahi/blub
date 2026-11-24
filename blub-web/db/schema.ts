@@ -18,3 +18,31 @@ export const comments = sqliteTable("comments", {
   index("comments_post_id").on(table.post, table.id),
   uniqueIndex("comments_request").on(table.post, table.author, table.requestId),
 ]);
+
+export const activity = sqliteTable("activity", {
+  id: integer("id").primaryKey({autoIncrement:true}),
+  eventKey: text("event_key").notNull().unique(),
+  recipient: text("recipient").notNull().references(()=>users.id),
+  actor: text("actor").notNull().references(()=>users.id),
+  friendship: text("friendship").notNull().references(()=>friendships.id,{onDelete:"cascade"}),
+  kind: text("kind").notNull(),
+  post: text("post").references(()=>posts.id,{onDelete:"cascade"}),
+  comment: integer("comment").references(()=>comments.id,{onDelete:"cascade"}),
+  created: integer("created").notNull(),
+  seen: integer("seen").notNull().default(0),
+  hidden: integer("hidden").notNull().default(0),
+}, t=>[index("activity_inbox").on(t.recipient,t.hidden,t.seen,t.id)]);
+
+export const devices = sqliteTable("notification_devices", {
+  token:text("token").primaryKey(), owner:text("owner").notNull().references(()=>users.id),
+  environment:text("environment").notNull(), since:integer("since").notNull(),
+});
+export const deliveries = sqliteTable("push_deliveries", {
+  event:integer("event").notNull().references(()=>activity.id,{onDelete:"cascade"}),
+  token:text("token").notNull().references(()=>devices.token,{onDelete:"cascade"}),
+  due:integer("due").notNull(), attempts:integer("attempts").notNull().default(0),
+}, t=>[primaryKey({columns:[t.event,t.token]}),index("push_due").on(t.due)]);
+export const digests = sqliteTable("digest_settings", {
+  owner:text("owner").primaryKey().references(()=>users.id),email:text("email").notNull(),
+  since:integer("since").notNull(),due:integer("due").notNull(),
+});

@@ -1,14 +1,15 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { preload } from "react-dom";
 import { Heart, MessageCircle, Trash2 } from "lucide-react";
 
 import { Avatar } from "./avatar";
 
 export type Post = { name: string; handle: string; author: string; avatar?: string | null; created_at: number; id: string; caption: string; liked: number; like_count: number; comment_count: number; preview_comments?: Comment[] };
-type Comment = { id: number; handle: string; body: string };
+type Comment = { author?:string; id: number; handle: string; body: string };
 type Props = {
+  me?:string; initialThread?:boolean;
   post: Post;
   busy: boolean;
   onDelete?: () => void;
@@ -16,10 +17,11 @@ type Props = {
   act: (body: Record<string, string>) => Promise<boolean>;
 };
 
-export function PostInteractions({ post, busy, act, onPhotoSettled, onDelete }: Props) {
+export function PostInteractions({ post, busy, act, onPhotoSettled, onDelete, me, initialThread }: Props) {
   preload("/chrome-heart.png", { as: "image" });
   const [pulse, setPulse] = useState(0);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(Boolean(initialThread));
+  useEffect(()=>{if(initialThread)void readComments();},[initialThread]);
   const [loading, setLoading] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [more, setMore] = useState(false);
@@ -94,7 +96,10 @@ export function PostInteractions({ post, busy, act, onPhotoSettled, onDelete }: 
     </div>}
     {open && <section className="post-comments" aria-label="Post comments">
       {more && <button className="text-button" disabled={locked} onClick={() => readComments(comments[0].id)}>Earlier comments</button>}
-      {comments.map(comment => <p key={comment.id}><b>@{comment.handle}</b> {comment.body}</p>)}
+      {comments.map(comment => <p key={comment.id}><b>@{comment.handle}</b> {comment.body} {me && comment.author===me &&
+        <button className="icon-button" aria-label="Delete your comment" disabled={locked} onClick={async()=>{
+          if(window.confirm("Delete your comment?") && await act({action:"deleteComment",id:post.id,commentId:String(comment.id)}))await readComments();
+        }}><Trash2 size={14}/></button>}</p>)}
       {loading && <p role="status">Loading comments…</p>}
       {error && <p role="alert">{error} <button className="text-button" onClick={() => readComments()}>Retry</button></p>}
       <form onSubmit={send}>

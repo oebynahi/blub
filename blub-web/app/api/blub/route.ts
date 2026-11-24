@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import { getChatGPTUser } from "../../chatgpt-auth";
+import { eventWrites, inbox, setDigest } from "../../../lib/activity";
 export const dynamic="force-dynamic";
 const json=(data:unknown,status=200)=>Response.json(data,{status,headers:{"Cache-Control":"no-store"}});
 const db=()=>env.DB!;
@@ -31,13 +32,24 @@ export async function GET(req:Request){try{
  return new Response(image.body,{headers:{"Content-Type":image.httpMetadata?.contentType||"image/jpeg","Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"}});
  }
  if(!me)return json({authenticated:true,me:null});
+ if(action==="activityItem"){
+   const item=await db().prepare(`SELECT a.id,a.kind,a.post,u.handle,1 total,a.seen FROM activity a JOIN users u ON u.id=a.actor
+     WHERE a.id=? AND a.recipient=? AND a.hidden=0`).bind(url.searchParams.get("id"),u.userId).first();
+   return item?json(item):json({error:"Activity no longer available"},404);
+ }
+ if(action==="badge")return json({unread:!!await db().prepare("SELECT 1 FROM activity WHERE recipient=? AND hidden=0 AND seen=0 LIMIT 1").bind(u.userId).first()});
+ if(action==="activity"){
+   const before=Number(url.searchParams.get("before")??Number.MAX_SAFE_INTEGER);
+   if(!Number.isSafeInteger(before)||before<1)return json({error:"Invalid cursor"},400);
+   return json(await inbox(db(),u.userId,before));
+ }
  if(action==="comments"){
    const id=url.searchParams.get("id"), before=Number(url.searchParams.get("before") ?? Number.MAX_SAFE_INTEGER);
    if(!Number.isSafeInteger(before)||before<1)return json({error:"Invalid comment cursor"},400);
    const access=[id,u.userId,u.userId,u.userId,u.userId];
    const [post,page]=await db().batch([
      db().prepare(`SELECT p.id FROM posts p WHERE p.id=? AND ${visible}`).bind(...access),
-     db().prepare(`SELECT c.id,c.body,u.handle FROM posts p JOIN comments c ON c.post=p.id
+     db().prepare(`SELECT c.id,c.body,u.handle,c.author FROM posts p JOIN comments c ON c.post=p.id
        JOIN users u ON u.id=c.author WHERE p.id=? AND ${visible} AND c.id<? ORDER BY c.id DESC LIMIT 31`).bind(...access,before)
    ]);
    if(!post.results.length)return json({error:"Post not found"},404);
@@ -52,6 +64,12 @@ export async function GET(req:Request){try{
    (SELECT count(*) FROM likes WHERE post=p.id) AS like_count,
    EXISTS(SELECT 1 FROM likes WHERE post=p.id AND author=?) AS liked,
    (SELECT count(*) FROM comments WHERE post=p.id) AS comment_count FROM posts p JOIN users u ON u.id=p.author`;
+ if(action==="post"){
+   const post=await db().prepare(`${postFields} WHERE p.id=? AND ${visible}`).bind(u.userId,url.searchParams.get("id"),u.userId,u.userId,u.userId,u.userId).first();
+   if(!post)return json({error:"Post no longer available"},404);
+   const {previews_json,...fields}=post;
+   return json({...fields,preview_comments:JSON.parse(String(previews_json)).reverse()});
+ }
  if(action==="mine"){
    const cursor=Number(url.searchParams.get("time")??Number.MAX_SAFE_INTEGER);
    if(!Number.isSafeInteger(cursor))return json({error:"Invalid cursor"},400);
@@ -62,7 +80,8 @@ export async function GET(req:Request){try{
  const feed=await db().prepare(`${postFields} WHERE ${visible} ORDER BY p.created_at DESC,p.id DESC LIMIT 100`).bind(u.userId,u.userId,u.userId,u.userId,u.userId).all();
  const friends=await db().prepare("SELECT f.*,u.name,u.handle,u.bio,u.avatar FROM friendships f JOIN users u ON u.id=CASE WHEN f.sender=? THEN f.recipient ELSE f.sender END WHERE f.sender=? OR f.recipient=? ORDER BY f.created_at DESC").bind(u.userId,u.userId,u.userId).all();
  const posts=feed.results.map(({previews_json,...post})=>({...post,preview_comments:JSON.parse(String(previews_json)).reverse()}));
- return json({authenticated:true,me,posts,friends:friends.results});
+ const unread=!!await db().prepare("SELECT 1 FROM activity WHERE recipient=? AND hidden=0 AND seen=0 LIMIT 1").bind(u.userId).first();
+ return json({authenticated:true,me,posts,friends:friends.results,unread});
  }catch(e){console.error(e);return json({error:"Couldn't load Blub. Please try again."},500)}}
 export async function POST(req:Request){try{
  const origin=req.headers.get("origin");if(origin&&origin!==new URL(req.url).origin)return json({error:"Request not allowed"},403);
@@ -110,6 +129,35 @@ export async function POST(req:Request){try{
  await db().prepare("INSERT INTO users (id,name,handle,bio,created_at) VALUES (?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,handle=excluded.handle,bio=excluded.bio").bind(u.userId,name,handle,bio,Date.now()).run();return json({ok:true});
  }
  if(!me)return json({error:"Create your profile first"},400);
+ if(data.action==="deleteComment"){
+   const result=await db().prepare("DELETE FROM comments WHERE id=? AND post=? AND author=?").bind(data.commentId,data.id,u.userId).run();
+   return result.meta.changes?json({ok:true}):json({error:"Comment not found"},404);
+ }
+ if(data.action==="readActivity"){
+   const ids=String(data.ids??"").split(",").map(Number);
+   if(ids.length>40||ids.some(id=>!Number.isSafeInteger(id)||id<1))return json({error:"Invalid activity"},400);
+   await db().prepare(`WITH opened AS MATERIALIZED (
+     SELECT id,kind,post FROM activity WHERE recipient=? AND id IN (SELECT value FROM json_each(?))
+   ) UPDATE activity SET seen=1 WHERE recipient=? AND seen=0 AND
+     (id IN (SELECT id FROM opened) OR (kind='like' AND EXISTS(
+       SELECT 1 FROM opened o WHERE o.kind='like' AND o.post=activity.post AND o.id>=activity.id)))`)
+     .bind(u.userId,JSON.stringify(ids),u.userId).run();
+   return json({ok:true});
+ }
+ if(data.action==="digest"){
+   if(!["on","off"].includes(data.value))return json({error:"Invalid preference"},400);
+   return await setDigest(db(),u.userId,u.email,data.value==="on")?json({ok:true}):json({error:"Your account needs a verified email"},400);
+ }
+ if(data.action==="device"||data.action==="detach"){
+   if(!/^[a-f0-9]{32,512}$/.test(data.token??""))return json({error:"Invalid device token"},400);
+   if(data.action==="detach")await db().prepare("DELETE FROM notification_devices WHERE token=? AND owner=?").bind(data.token,u.userId).run();
+   else {
+     if(!["sandbox","production"].includes(data.environment))return json({error:"Invalid push environment"},400);
+     await db().batch([db().prepare("DELETE FROM notification_devices WHERE token=? AND (owner<>? OR environment<>?)").bind(data.token,u.userId,data.environment),
+       db().prepare("INSERT OR IGNORE INTO notification_devices(token,owner,environment,since) VALUES(?,?,?,?)").bind(data.token,u.userId,data.environment,Date.now())]);
+   }
+   return json({ok:true});
+ }
  if(["like","unlike","comment"].includes(data.action)){
    if(typeof data.id!=="string")return json({error:"Post not found"},404);
    const access=[data.id,u.userId,u.userId,u.userId,u.userId];
@@ -127,16 +175,33 @@ export async function POST(req:Request){try{
    }else{
      write=db().prepare(`DELETE FROM likes WHERE author=? AND post IN (SELECT p.id ${allowed})`).bind(u.userId,...access);
    }
-   const [post]=await db().batch([db().prepare(`SELECT p.id ${allowed}`).bind(...access),write]);
+   const kind=data.action==="comment"?"comment":"like";
+   const key=JSON.stringify([kind,data.id,u.userId,kind==="comment"?data.requestId:""]);
+   const activity=data.action==="unlike"?[db().prepare("UPDATE activity SET hidden=1,seen=1 WHERE event_key=? AND actor=?").bind(key,u.userId)]:
+     eventWrites(db(),key,db().prepare(`INSERT INTO activity(event_key,recipient,actor,friendship,kind,post,comment,created)
+       SELECT ?,p.author,?,f.id,?,p.id,c.id,? FROM posts p JOIN friendships f
+       ON ((f.sender=p.author AND f.recipient=?) OR (f.recipient=p.author AND f.sender=?)) AND f.status='accepted'
+       LEFT JOIN comments c ON c.post=p.id AND c.author=? AND c.request_id=?
+       WHERE p.id=? AND p.author<>? AND (?='like' OR c.id IS NOT NULL)
+       ON CONFLICT(event_key) DO UPDATE SET hidden=0`).bind(key,u.userId,kind,Date.now(),u.userId,u.userId,u.userId,kind==="comment"?data.requestId:null,data.id,u.userId,kind),kind==="comment");
+   const [post]=await db().batch([db().prepare(`SELECT p.id ${allowed}`).bind(...access),write,...activity]);
    return post.results.length?json({ok:true}):json({error:"Post not found"},404);
  }
  if(data.action==="request"){
  if(data.user===u.userId)return json({error:"That's you!"},400);
  if(!await db().prepare("SELECT id FROM users WHERE id=?").bind(data.user).first())return json({error:"Person not found"},404);
  const pair=[u.userId,data.user].sort().join(":");
- await db().prepare("INSERT OR IGNORE INTO friendships (id,sender,recipient,status,created_at) VALUES (?,?,?,'pending',?)").bind(pair,u.userId,data.user,Date.now()).run();return json({ok:true});
+ const key="request:"+pair;
+ await db().batch([db().prepare("INSERT OR IGNORE INTO friendships (id,sender,recipient,status,created_at) VALUES (?,?,?,'pending',?)").bind(pair,u.userId,data.user,Date.now()),
+   ...eventWrites(db(),key,db().prepare(`INSERT OR IGNORE INTO activity(event_key,recipient,actor,friendship,kind,created)
+   SELECT ?,recipient,sender,id,'request',created_at FROM friendships WHERE id=? AND sender=? AND status='pending'`).bind(key,pair,u.userId),true)]);
+ return json({ok:true});
  }
- if(data.action==="accept")await db().prepare("UPDATE friendships SET status='accepted' WHERE id=? AND recipient=? AND status='pending'").bind(data.id,u.userId).run();
+ if(data.action==="accept")await db().batch([
+   db().prepare(`INSERT OR IGNORE INTO activity(event_key,recipient,actor,friendship,kind,created)
+     SELECT ?,sender,recipient,id,'accepted',? FROM friendships WHERE id=? AND recipient=? AND status='pending'`).bind("accepted:"+data.id,Date.now(),data.id,u.userId),
+   db().prepare("DELETE FROM activity WHERE friendship=? AND kind='request' AND recipient=?").bind(data.id,u.userId),
+   db().prepare("UPDATE friendships SET status='accepted' WHERE id=? AND recipient=? AND status='pending'").bind(data.id,u.userId)]);
  else if(data.action==="remove")await db().prepare("DELETE FROM friendships WHERE id=? AND (sender=? OR recipient=?)").bind(data.id,u.userId,u.userId).run();
  else if(data.action==="delete"){
  const post=await db().prepare("SELECT photo FROM posts WHERE id=? AND author=?").bind(data.id,u.userId).first<{photo:string}>();if(!post)return json({error:"Post not found"},404);

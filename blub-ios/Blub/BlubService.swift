@@ -15,6 +15,7 @@ struct BlubPost: Decodable, Identifiable, Hashable {
 struct FeedResponse: Decodable {
     struct Profile: Decodable, Identifiable { let id, name, handle, bio: String; let avatar: String? }
     let friends: [Friendship]?
+    var unread: Bool? = nil
     let authenticated: Bool
     let me: Profile?
     let posts: [BlubPost]?
@@ -24,7 +25,7 @@ struct Friendship: Decodable, Identifiable {
     let id, sender, recipient, status, name, handle: String
     let avatar: String?
 }
-struct Comment: Decodable, Identifiable, Hashable { let id: Int; let body, handle: String }
+struct Comment: Decodable, Identifiable, Hashable { let id: Int; let body, handle: String; let author: String? }
 struct CommentPage: Decodable { let comments: [Comment]; let more: Bool }
 struct PostPage: Decodable { let posts: [BlubPost]; let more: Bool }
 struct SearchPage: Decodable { let users: [FeedResponse.Profile] }

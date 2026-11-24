@@ -2,6 +2,7 @@ import SwiftUI
 
 @main
 struct BlubApp: App {
+    @UIApplicationDelegateAdaptor(PushAlerts.self) private var push
     var body: some Scene { WindowGroup { FeedScreen().preferredColorScheme(.dark) } }
 }
 
@@ -45,7 +46,15 @@ struct Wordmark: View {
         }
     }
     func connect() async { await service.syncSiteSession(); await load() }
-    func logout() async { revision += 1; data = nil; await service.signOut(); await load() }
+    func refreshBadge() async {
+        let owner=data?.me?.id
+        if let response:[String:Bool] = try? await service.read(["action":"badge"]), owner == data?.me?.id {
+            data?.unread=response["unread"]
+        }
+    }
+    func logout() async {
+        do { try await PushAlerts.current?.disable() } catch { initialError=error.localizedDescription; return }
+        revision += 1; data = nil; await service.signOut(); await load() }
 }
 
 struct FeedScreen: View {
@@ -121,8 +130,11 @@ struct MainTabs: View {
     let model: AppModel
     let me: FeedResponse.Profile
     @State private var compose = false
+    @State private var activity = false
+    @State private var tab = 0
+    @Environment(\.scenePhase) private var scenePhase
     var body: some View {
-        TabView {
+        TabView(selection:$tab) {
             NavigationStack {
                 ScrollView(.vertical) {
                     if let posts = model.data?.posts, !posts.isEmpty {
@@ -145,15 +157,30 @@ struct MainTabs: View {
                     HStack {
                         Wordmark(size: 32).fixedSize()
                         Spacer()
+                        Button { activity = true } label: {
+                            Image(systemName: model.data?.unread == true ? "bell.badge.fill" : "bell")
+                                .frame(width:44,height:44)
+                        }.accessibilityLabel(model.data?.unread == true ? "Activity, unread notifications" : "Activity")
                         Button { compose = true } label: {
                             Image(systemName: "plus").frame(width: 44, height: 44)
                         }.accessibilityLabel("Post a photo")
                     }.padding(.horizontal, 16).padding(.vertical, 4).background(ink)
                 }
-            }.tabItem { Label("Feed", systemImage: "house") }
-            NavigationStack { FriendsScreen(model: model, me: me) }.tabItem { Label("Friends", systemImage: "person.2") }
-            NavigationStack { ProfileScreen(model: model, me: me) }.tabItem { Label("Profile", systemImage: "person.crop.circle") }
+            }.tabItem { Label("Feed", systemImage: "house") }.tag(0)
+            NavigationStack { FriendsScreen(model: model, me: me) }.tabItem { Label("Friends", systemImage: "person.2") }.tag(1)
+            NavigationStack { ProfileScreen(model: model, me: me) }.tabItem { Label("Profile", systemImage: "person.crop.circle") }.tag(2)
         }.sheet(isPresented: $compose) { NavigationStack { Editor(model: model, mode: .post) } }
+        .task(id:me.id) { PushAlerts.current?.attach(model,user:me.id) }
+        .task(id:scenePhase) {
+            guard scenePhase == .active else { return }
+            while !Task.isCancelled { await model.refreshBadge(); do { try await Task.sleep(for:.seconds(45)) } catch { return } }
+        }
+        .onChange(of:PushAlerts.current?.openInbox,initial:true) {
+            if PushAlerts.current?.openInbox == true { activity=true;PushAlerts.current?.openInbox=false }
+        }
+        .sheet(isPresented:$activity) { NavigationStack { ActivityScreen(model:model,showFriends:{
+            activity=false;tab=1;Task { await model.load() }
+        }) } }
         .alert("Couldn’t refresh Blub", isPresented: Binding(get: { model.initialError != nil }, set: { if !$0 { model.initialError = nil } })) {
             Button("Retry") { Task { await model.load() } }; Button("Close", role: .cancel) {}
         } message: { Text(model.initialError ?? "") }

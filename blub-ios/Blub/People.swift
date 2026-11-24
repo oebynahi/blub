@@ -8,6 +8,7 @@ struct FriendsScreen: View {
     @State private var searched = false
     @State private var busy = false
     @State private var error: String?
+    @State private var offerAlerts = false
     @State private var removal: Friendship?
     private var friends: [Friendship] { model.data?.friends ?? [] }
     var body: some View {
@@ -36,6 +37,10 @@ struct FriendsScreen: View {
             }
             if let error { Text(error).foregroundStyle(.pink) }
         }.disabled(busy).navigationTitle("Friends").refreshable { await model.load() }
+        .alert("Get alerts for friend requests and comments?",isPresented:$offerAlerts) {
+            Button("Enable alerts") { Task { await PushAlerts.current?.enable() } }
+            Button("Later",role:.cancel) {}
+        }
         .confirmationDialog("Remove @"+(removal?.handle ?? "")+" from friends?", isPresented: Binding(get: { removal != nil }, set: { if !$0 { removal = nil } }), titleVisibility: .visible, presenting: removal) { row in
             Button("Remove friend", role: .destructive) { Task { await update(["action":"remove","id":row.id]) } }
         }
@@ -60,7 +65,11 @@ struct FriendsScreen: View {
     }
     private func update(_ values: [String:String]) async {
         guard !busy else { return }; busy = true; defer { busy = false }
-        do { try await model.service.write(values); error = nil; await model.load() }
+        do { try await model.service.write(values); error = nil; await model.load()
+            if values["action"]=="request",!UserDefaults.standard.bool(forKey:"offered-push-"+me.id),PushAlerts.current?.enabled != true {
+                UserDefaults.standard.set(true,forKey:"offered-push-"+me.id);offerAlerts=true
+            }
+        }
         catch { self.error = error.localizedDescription }
     }
 }

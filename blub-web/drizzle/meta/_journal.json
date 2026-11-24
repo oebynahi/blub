@@ -29,6 +29,13 @@
       "when": 1795363916383,
       "tag": "0003_profile_pictures",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1795544982324,
+      "tag": "0004_activity",
+      "breakpoints": true
     }
   ]
 }

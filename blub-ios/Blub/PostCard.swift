@@ -136,6 +136,7 @@ struct CommentsScreen: View {
     let model: AppModel
     let changed: () async -> Void
     @Environment(\.dismiss) private var dismiss
+    @State private var deleting: Comment?
     @State private var rows = [Comment]()
     @State private var draft = ""
     @State private var key = UUID().uuidString
@@ -145,7 +146,9 @@ struct CommentsScreen: View {
     var body: some View {
         List {
             if more { Button("Earlier comments") { Task { await page(older: true) } } }
-            ForEach(rows) { row in VStack(alignment: .leading) { Text("@"+row.handle).font(.caption.bold()); Text(row.body) } }
+            ForEach(rows) { row in VStack(alignment: .leading) { Text("@"+row.handle).font(.caption.bold()); Text(row.body)
+                if row.author == model.data?.me?.id { Button("Delete",role:.destructive) { deleting=row }.font(.caption) }
+            } }
             if rows.isEmpty && !busy && error == nil { Text("No comments yet.").foregroundStyle(.secondary) }
             if let error { Text(error); Button("Reload comments") { Task { await page() } } }
         }.safeAreaInset(edge: .bottom) {
@@ -154,6 +157,13 @@ struct CommentsScreen: View {
             }.padding().background(.bar)
         }.disabled(busy).navigationTitle("Comments")
         .toolbar { Button("Done") { dismiss() } }.task { await page() }
+        .confirmationDialog("Delete your comment?",isPresented:Binding(get:{deleting != nil},set:{if !$0 {deleting=nil}}),titleVisibility:.visible,presenting:deleting) { row in
+            Button("Delete comment",role:.destructive) { Task {
+                busy=true
+                do { try await model.service.write(["action":"deleteComment","id":post.id,"commentId":String(row.id)]);await model.load();await changed();await page() }
+                catch { self.error=error.localizedDescription;busy=false }
+            } }
+        }
         .onChange(of: draft) { key = UUID().uuidString }
     }
     private func page(older: Bool = false) async {

@@ -2,8 +2,13 @@ import handler from "vinext/server/fetch-handler";
 import { runWithConnectorBinding } from "../lib/connector-context";
 import type { ConnectorBinding } from "../lib/connector-contract.mjs";
 
+import { deliverNotifications } from "./notifications";
+let lastDelivery = 0;
 const worker = {
-  fetch(request: Request, env: Cloudflare.Env, ctx: ExecutionContext<{ CONNECTORS?: ConnectorBinding }>) {
+  scheduled(_controller:ScheduledController, env:Cloudflare.Env, ctx:ExecutionContext) {
+    ctx.waitUntil(deliverNotifications(env));
+  },
+  async fetch(request: Request, env: Cloudflare.Env, ctx: ExecutionContext<{ CONNECTORS?: ConnectorBinding }>) {
     let binding = ctx.props?.CONNECTORS;
     // Local preview emulates the same request-scoped capability. This branch and
     // the auxiliary service binding are absent from production builds.
@@ -23,7 +28,13 @@ const worker = {
         },
       };
     }
-    return runWithConnectorBinding(binding, () => handler.fetch(request, env, ctx));
+    const response = await runWithConnectorBinding(binding, () => handler.fetch(request, env, ctx));
+    if(new URL(request.url).pathname==="/api/blub" && response.ok &&
+       (request.method==="POST" || Date.now()-lastDelivery>60000)) {
+      lastDelivery=Date.now();
+      ctx.waitUntil(deliverNotifications(env));
+    }
+    return response;
   },
 };
 
