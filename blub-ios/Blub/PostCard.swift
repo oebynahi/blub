@@ -6,6 +6,7 @@ struct PrivatePhoto: View {
     let service: BlubService
     var highlight = false
     var thumbnail = false
+    var onLoaded: () -> Void = {}
     @State private var image: UIImage?
     @State private var failed = false
     @State private var retry = 0
@@ -19,7 +20,7 @@ struct PrivatePhoto: View {
         }
         .task(id: "\(id)/\(avatar ?? "")/\(retry)") {
             image = nil; failed = false
-            do { let value = try await service.photo(id, avatar: avatar, highlight: highlight); try Task.checkCancellation(); image = value }
+            do { let value = try await service.photo(id, avatar: avatar, highlight: highlight); try Task.checkCancellation(); image = value; onLoaded() }
             catch { if !Task.isCancelled { failed = true } }
         }
     }
