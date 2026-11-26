@@ -55,9 +55,17 @@ export async function GET(req:Request){try{
    if(!post.results.length)return json({error:"Post not found"},404);
    return json({comments:page.results.slice(0,30).reverse(),more:page.results.length>30});
  }
+ if(action==="member"){
+   const member=await db().prepare(`SELECT id,name,handle,bio,avatar,
+     (id=? OR EXISTS(SELECT 1 FROM friendships WHERE status='accepted'
+       AND ((sender=? AND recipient=users.id) OR (recipient=? AND sender=users.id)))) AS can_view
+     FROM users WHERE handle=?`).bind(u.userId,u.userId,u.userId,url.searchParams.get("handle")).first();
+   return member?json(member):json({error:"Profile not found"},404);
+ }
  if(action==="search"){const q=(url.searchParams.get("q")||"").replace(/^@/,"").toLowerCase();if(q.length<2)return json({users:[]});const rows=await db().prepare("SELECT id,name,handle,bio,avatar FROM users WHERE id!=? AND substr(handle,1,length(?))=? LIMIT 20").bind(u.userId,q,q).all();return json({users:rows.results});}
  // Read only the two newest comments for each visible feed post using the post/id index.
- const previewField=action==="mine"?"":`(SELECT json_group_array(json_object('id',id,'handle',handle,'body',body))
+ const profilePhotos=action==="mine" || action==="memberPhotos";
+ const previewField=profilePhotos?"":`(SELECT json_group_array(json_object('id',id,'handle',handle,'body',body))
    FROM (SELECT c.id, u.handle, substr(c.body,1,180) AS body FROM comments c JOIN users u ON u.id=c.author
          WHERE c.post=p.id ORDER BY c.id DESC LIMIT 2)) AS previews_json,`;
  const postFields=`SELECT ${previewField} p.id,p.caption,p.created_at,u.name,u.handle,u.avatar,p.author,
@@ -70,11 +78,11 @@ export async function GET(req:Request){try{
    const {previews_json,...fields}=post;
    return json({...fields,preview_comments:JSON.parse(String(previews_json)).reverse()});
  }
- if(action==="mine"){
+ if(profilePhotos){
    const cursor=Number(url.searchParams.get("time")??Number.MAX_SAFE_INTEGER);
    if(!Number.isSafeInteger(cursor))return json({error:"Invalid cursor"},400);
-   const page=await db().prepare(`${postFields} WHERE p.author=? AND (p.created_at,p.id)<(?,?) ORDER BY p.created_at DESC,p.id DESC LIMIT 31`)
-     .bind(u.userId,u.userId,cursor,url.searchParams.get("before")??"").all();
+   const page=await db().prepare(`${postFields} WHERE p.author=? AND ${visible} AND (p.created_at,p.id)<(?,?) ORDER BY p.created_at DESC,p.id DESC LIMIT 31`)
+     .bind(u.userId,action==="mine"?u.userId:url.searchParams.get("id"),u.userId,u.userId,u.userId,u.userId,cursor,url.searchParams.get("before")??"").all();
    return json({posts:page.results.slice(0,30),more:page.results.length>30});
  }
  const feed=await db().prepare(`${postFields} WHERE ${visible} ORDER BY p.created_at DESC,p.id DESC LIMIT 100`).bind(u.userId,u.userId,u.userId,u.userId,u.userId).all();

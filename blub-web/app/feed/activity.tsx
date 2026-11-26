@@ -1,5 +1,6 @@
 "use client";
 import { useEffect,useState } from "react";
+import { Handle } from "./member-profile";
 import { PostInteractions, type Post } from "./post-interactions";
 
 type Item={id:number;kind:string;post:string|null;handle:string;total:number;seen:number};
@@ -42,9 +43,9 @@ export function Activity({me,act,busy,friends,read}:{me:string;busy:boolean;
     <label><input type="checkbox" checked={email} disabled={busy||loading} onChange={async e=>{
       const checked=e.target.checked;if(await act({action:"digest",value:checked?"on":"off"}))setEmail(checked);
     }}/> Email me about unread activity at most once a week</label>
-    {items.map(item=><button className="activity-row" key={item.id} disabled={loading} onClick={()=>{
+    {items.map(item=><div className="activity-row" key={item.id}><Handle handle={item.handle}/>{" "}<button disabled={loading} onClick={()=>{
       if(!item.post){friends();return;}setThread(item.kind==="comment");void show(item.post).catch(e=>setError(e.message));
-    }}><b>@{item.handle}</b>{" "}{item.kind==="request"?"sent you a friend request":item.kind==="accepted"?"accepted your friend request":item.kind==="comment"?"commented on your photo":(item.total>1?"and "+(item.total-1)+" more liked your photo":"liked your photo")}</button>)}
+    }}>{item.kind==="request"?"sent you a friend request":item.kind==="accepted"?"accepted your friend request":item.kind==="comment"?"commented on your photo":(item.total>1?"and "+(item.total-1)+" more liked your photo":"liked your photo")}</button></div>)}
     {loading?<p role="status">Loading activity…</p>:!items.length&&!error&&<p className="muted">No activity yet.</p>}
     {error&&<p role="alert">{error} <button onClick={()=>page()}>Refresh</button></p>}
     {more&&<button disabled={loading} onClick={()=>page(items[items.length-1].id)}>Earlier activity</button>}

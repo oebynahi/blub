@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { preload } from "react-dom";
 import { Heart, MessageCircle, Trash2 } from "lucide-react";
 
+import { Handle } from "./member-profile";
 import { Avatar } from "./avatar";
 
 export type Post = { name: string; handle: string; author: string; avatar?: string | null; created_at: number; id: string; caption: string; liked: number; like_count: number; comment_count: number; preview_comments?: Comment[] };
@@ -77,7 +78,7 @@ export function PostInteractions({ post, busy, act, onPhotoSettled, onDelete, me
     </div>
     <div className="photo-toolbar">
       <Avatar name={post.name} id={post.author} avatar={post.avatar}/>
-      <div className="photo-credit"><b>@{post.handle}</b>
+      <div className="photo-credit"><Handle handle={post.handle}/>
         <time dateTime={new Date(post.created_at).toISOString()}>{new Date(post.created_at).toLocaleDateString(undefined, {month:"short",day:"numeric"})} · Friends only</time>
       </div>
       <div className="post-actions">
@@ -92,11 +93,11 @@ export function PostInteractions({ post, busy, act, onPhotoSettled, onDelete, me
     </div>
     {post.caption && <p className="caption">{post.caption}</p>}
     {!open && Boolean(post.preview_comments?.length) && <div className="comment-preview" aria-label="Recent comments">
-      {post.preview_comments?.map(comment => <p key={comment.id}><b>@{comment.handle}</b> {comment.body}</p>)}
+      {post.preview_comments?.map(comment => <p key={comment.id}><Handle handle={comment.handle}/> {comment.body}</p>)}
     </div>}
     {open && <section className="post-comments" aria-label="Post comments">
       {more && <button className="text-button" disabled={locked} onClick={() => readComments(comments[0].id)}>Earlier comments</button>}
-      {comments.map(comment => <p key={comment.id}><b>@{comment.handle}</b> {comment.body} {me && comment.author===me &&
+      {comments.map(comment => <p key={comment.id}><Handle handle={comment.handle}/> {comment.body} {me && comment.author===me &&
         <button className="icon-button" aria-label="Delete your comment" disabled={locked} onClick={async()=>{
           if(window.confirm("Delete your comment?") && await act({action:"deleteComment",id:post.id,commentId:String(comment.id)}))await readComments();
         }}><Trash2 size={14}/></button>}</p>)}

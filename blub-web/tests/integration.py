@@ -96,7 +96,16 @@ friendship = feed(users[1])['friends'][0]['id']
 act(users[0], action='accept', id=friendship)
 assert not feed(users[1])['posts'], 'Sender must not accept their own request'
 assert request(users[1], path=photo)[0] == 404
+member = '/api/blub?action=member&handle=' + users[0]
+grid = '/api/blub?action=memberPhotos&id=' + users[0]
+assert request(users[1], path=member)[1]['can_view'] == 0
+assert request(users[1], path=grid)[1]['posts'] == []
+assert request(users[2], path=member)[1]['name'] == 'Test Avatar'
+assert request(users[1], path=member+'missing')[0] == 404
 assert act(users[1], action='accept', id=friendship)[0] == 200
+assert request(users[1], path=member)[1]['can_view'] == 1
+assert [p['id'] for p in request(users[1], path=grid)[1]['posts']] == [p['id'] for p in posts]
+assert request(users[2], path=grid)[1]['posts'] == []
 assert len(feed(users[1])['posts']) == 2
 assert request(users[1], path=photo)[0] == 200
 assert not feed(users[2])['posts']
@@ -149,6 +158,8 @@ assert act(users[1], action='unlike', id=post_id)[0] == 200
 assert feed(users[0])['posts'][0]['like_count'] == 0
 assert act(users[0], action='like', id=post_id)[0] == 200
 assert act(users[1], action='remove', id=friendship)[0] == 200
+assert request(users[1], path=grid)[1]['posts'] == []
+assert request(users[1], path=member)[1]['can_view'] == 0
 assert request(users[1], path=thread)[0] == 404
 assert not inbox(users[0])['items']
 assert comment(users[1], 'revoked', 'revoked')[0] == 404

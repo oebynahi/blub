@@ -23,7 +23,7 @@ struct FriendsScreen: View {
                 ForEach(results) { person in
                     HStack {
                         AvatarView(id: person.id, name: person.name, version: person.avatar, service: model.service)
-                        Text("@"+person.handle); Spacer()
+                        MemberHandle(handle: person.handle, model: model); Spacer()
                         if let match = friends.first(where: { $0.sender == person.id || $0.recipient == person.id }) {
                             Text(match.status == "accepted" ? "Friends" : "Pending").font(.caption)
                         } else { Button("Add") { Task { await update(["action":"request","user":person.id]) } } }
@@ -48,7 +48,7 @@ struct FriendsScreen: View {
     private func personRow(_ row: Friendship) -> some View {
         HStack {
             AvatarView(id: row.sender == me.id ? row.recipient : row.sender, name: row.name, version: row.avatar, service: model.service)
-            VStack(alignment: .leading) { Text(row.name); Text("@"+row.handle).foregroundStyle(.secondary).font(.caption) }
+            VStack(alignment: .leading) { Text(row.name); MemberHandle(handle: row.handle, model: model).foregroundStyle(.secondary).font(.caption) }
             Spacer()
             if row.status == "accepted" {
                 Menu { Button("Remove friend", role: .destructive) { removal = row } } label: { Image(systemName: "ellipsis") }
@@ -77,6 +77,8 @@ struct FriendsScreen: View {
 struct ProfileScreen: View {
     let model: AppModel
     let me: FeedResponse.Profile
+    var visiting = false
+    var canView = true
     @State private var posts = [BlubPost]()
     @State private var more = false
     @State private var edit = false
@@ -92,24 +94,26 @@ struct ProfileScreen: View {
                     AvatarView(id: me.id, name: me.name, version: me.avatar, service: model.service, size: 60)
                     VStack(alignment: .leading) { Text(me.name).font(.title3.bold()); Text("@"+me.handle).foregroundStyle(.secondary); if !me.bio.isEmpty { Text(me.bio).font(.callout) } }
                     Spacer()
-                    Button("Edit") { edit = true }
+                    if !visiting { Button("Edit") { edit = true } }
                 }.padding().chromeCard()
-                Text("Your photos").font(.headline)
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 5), count: 3), spacing: 5) {
-                    ForEach(posts) { post in
-                        Button { selected = post.id; detail = true } label: {
-                            Color.black.aspectRatio(1, contentMode: .fit).overlay {
-                                PrivatePhoto(id: post.id, service: model.service, thumbnail: true)
-                            }.clipShape(RoundedRectangle(cornerRadius: 9))
-                        }.accessibilityLabel(post.caption.isEmpty ? "Open photo" : post.caption)
+                if !canView { Text("Photos are shared with friends.").foregroundStyle(.secondary) } else {
+                    Text(visiting ? "Photos" : "Your photos").font(.headline)
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 5), count: 3), spacing: 5) {
+                        ForEach(posts) { post in
+                            Button { selected = post.id; detail = true } label: {
+                                Color.black.aspectRatio(1, contentMode: .fit).overlay {
+                                    PrivatePhoto(id: post.id, service: model.service, thumbnail: true)
+                                }.clipShape(RoundedRectangle(cornerRadius: 9))
+                            }.accessibilityLabel(post.caption.isEmpty ? "Open photo" : post.caption)
+                        }
                     }
+                    if posts.isEmpty && count > 0 && error == nil { Text(visiting ? "No photos yet." : "Your photos will appear here.").foregroundStyle(.secondary) }
+                    if more { Button("More photos") { Task { await load(older: true) } } }
+                    if let error { Text(error); Button("Retry") { Task { await load() } } }
                 }
-                if posts.isEmpty && count > 0 && error == nil { Text("Your photos will appear here.").foregroundStyle(.secondary) }
-                if more { Button("More photos") { Task { await load(older: true) } } }
-                if let error { Text(error); Button("Retry") { Task { await load() } } }
             }.padding()
         }.background(ink).navigationTitle("Profile").refreshable { await model.load(); await load() }
-        .toolbar { Menu { Button("Sign out", role: .destructive) { Task { await model.logout() } } } label: { Image(systemName: "ellipsis.circle") } }
+        .toolbar { if !visiting { Menu { Button("Sign out", role: .destructive) { Task { await model.logout() } } } label: { Image(systemName: "ellipsis.circle") } } }
         .sheet(isPresented: $edit) { NavigationStack { Editor(model: model, mode: .profile(me)) } }
         .sheet(isPresented: $detail) {
             NavigationStack {
@@ -121,12 +125,13 @@ struct ProfileScreen: View {
         }.task { await load() }
     }
     private func load(older: Bool = false, keepSelection: Bool = false) async {
+        guard canView else { return }
         revision += 1; let token = revision
         var rows = older ? posts : []
         do {
             var hasMore = false
             repeat {
-                var q = ["action":"mine"]
+                var q = visiting ? ["action":"memberPhotos", "id":me.id] : ["action":"mine"]
                 if let last = rows.last { q["before"] = last.id; q["time"] = String(Int64(last.created_at)) }
                 let page: PostPage = try await model.service.read(q)
                 rows += page.posts; hasMore = page.more

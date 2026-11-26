@@ -41,9 +41,12 @@ struct ActivityScreen: View {
                     if let problem = push.problem { Text(problem).font(.footnote) }
                 }
             }
-            ForEach(items) { item in Button(item.title) {
+            ForEach(items) { item in HStack(alignment: .firstTextBaseline) {
+                MemberHandle(handle: item.handle, model: model)
+                Button(String(item.title.dropFirst(item.handle.count + 2))) {
                 if let id = item.post { Task { await open(id, comments: item.kind == "comment") } }
                 else { showFriends() }
+                }.buttonStyle(.borderless)
             }}
             if more { Button("Earlier activity") { Task { await load(older:true) } } }
             if busy { ProgressView() }

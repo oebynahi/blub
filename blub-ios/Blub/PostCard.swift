@@ -69,7 +69,7 @@ struct PostCard: View {
             HStack(spacing: 8) {
                 AvatarView(id: post.author, name: post.handle, version: post.avatar, service: model.service)
                 VStack(alignment: .leading) {
-                    Text("@"+post.handle).font(.subheadline.bold()).lineLimit(1)
+                    MemberHandle(handle: post.handle, model: model).font(.subheadline.bold()).lineLimit(1)
                     Text(Date(timeIntervalSince1970: post.created_at/1000), style: .date).font(.caption2).foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -90,7 +90,7 @@ struct PostCard: View {
             if let previews = post.preview_comments, !previews.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {
                     ForEach(previews) { comment in
-                        (Text("@"+comment.handle+" ").bold() + Text(comment.body))
+                        HStack(spacing: 4) { MemberHandle(handle: comment.handle, model: model).bold(); Text(comment.body) }
                             .font(.footnote).lineLimit(1).foregroundStyle(.secondary)
                     }
                 }
@@ -146,7 +146,7 @@ struct CommentsScreen: View {
     var body: some View {
         List {
             if more { Button("Earlier comments") { Task { await page(older: true) } } }
-            ForEach(rows) { row in VStack(alignment: .leading) { Text("@"+row.handle).font(.caption.bold()); Text(row.body)
+            ForEach(rows) { row in VStack(alignment: .leading) { MemberHandle(handle: row.handle, model: model).font(.caption.bold()); Text(row.body)
                 if row.author == model.data?.me?.id { Button("Delete",role:.destructive) { deleting=row }.font(.caption) }
             } }
             if rows.isEmpty && !busy && error == nil { Text("No comments yet.").foregroundStyle(.secondary) }
