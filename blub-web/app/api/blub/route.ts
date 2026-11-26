@@ -4,6 +4,11 @@ import { eventWrites, inbox, setDigest } from "../../../lib/activity";
 export const dynamic="force-dynamic";
 const json=(data:unknown,status=200)=>Response.json(data,{status,headers:{"Cache-Control":"no-store"}});
 const db=()=>env.DB!;
+const prompts = [
+ {id:"risk",prompt:"What's the biggest risk you've taken?"},
+ {id:"proud",prompt:"What's something you're really proud of?"},
+ {id:"self",prompt:"Tell us about yourself in one photo."},
+];
 function imageType(b:Uint8Array){
  let mime="";
  if(b[0]===255&&b[1]===216&&b[2]===255)mime="image/jpeg";
@@ -32,6 +37,20 @@ export async function GET(req:Request){try{
  return new Response(image.body,{headers:{"Content-Type":image.httpMetadata?.contentType||"image/jpeg","Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"}});
  }
  if(!me)return json({authenticated:true,me:null});
+ if(action==="highlights"){
+   const owner=url.searchParams.get("id");
+   const rows=await db().prepare(`SELECT p.id,p.slot FROM highlights p WHERE p.author=? AND ${visible}`)
+     .bind(owner,u.userId,u.userId,u.userId,u.userId).all<{id:string;slot:string}>();
+   const slots=prompts.map(prompt=>({...prompt,photo:rows.results.find(r=>r.slot===prompt.id)?.id??null}));
+   return json(owner===u.userId?slots:slots.filter(s=>s.photo));
+ }
+ if(action==="highlightPhoto"){
+   const row=await db().prepare(`SELECT p.id FROM highlights p WHERE p.id=? AND ${visible}`)
+     .bind(url.searchParams.get("id"),u.userId,u.userId,u.userId,u.userId).first<{id:string}>();
+   const object=row && await env.BUCKET!.get("highlights/"+row.id);
+   if(!object)return json({error:"Photo not found"},404);
+   return new Response(object.body,{headers:{"Content-Type":object.httpMetadata?.contentType||"image/jpeg","Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"}});
+ }
  if(action==="activityItem"){
    const item=await db().prepare(`SELECT a.id,a.kind,a.post,u.handle,1 total,a.seen FROM activity a JOIN users u ON u.id=a.actor
      WHERE a.id=? AND a.recipient=? AND a.hidden=0`).bind(url.searchParams.get("id"),u.userId).first();
@@ -106,6 +125,21 @@ export async function POST(req:Request){try{
  if(!(photo instanceof File)||!photo.size||photo.size>8*1024*1024||caption.length>1500)return json({error:"Add a photo up to 8 MB and a caption up to 1,500 characters"},400);
  const b=new Uint8Array(await photo.arrayBuffer());const mime=imageType(b);
  if(!mime)return json({error:"Choose a JPEG, PNG, or WebP photo"},400);
+ if(form.get("action")==="highlight"){
+   const slot=String(form.get("slot"));
+   if(!prompts.some(p=>p.id===slot))return json({error:"Unknown prompt"},400);
+   const id=crypto.randomUUID(),key="highlights/"+id;
+   await env.BUCKET!.put(key,b,{httpMetadata:{contentType:mime}});
+   let previous;
+   try{
+     [previous]=await db().batch<{id:string}>([
+       db().prepare("SELECT id FROM highlights WHERE author=? AND slot=?").bind(u.userId,slot),
+       db().prepare("INSERT INTO highlights(id,author,slot) VALUES(?,?,?) ON CONFLICT(author,slot) DO UPDATE SET id=excluded.id").bind(id,u.userId,slot)
+     ]);
+   }catch(e){await env.BUCKET!.delete(key);throw e;}
+   if(previous.results.length)await env.BUCKET!.delete("highlights/"+previous.results[0].id);
+   return json({ok:true});
+ }
  const id=crypto.randomUUID(),key=`photos/${u.userId}/${id}`;
  await env.BUCKET!.put(key,b,{httpMetadata:{contentType:mime}});
  try{await db().prepare("INSERT INTO posts (id,author,caption,photo,created_at) VALUES (?,?,?,?,?)").bind(id,u.userId,caption,key,Date.now()).run();}catch(e){await env.BUCKET!.delete(key);throw e;}
@@ -137,6 +171,12 @@ export async function POST(req:Request){try{
  await db().prepare("INSERT INTO users (id,name,handle,bio,created_at) VALUES (?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,handle=excluded.handle,bio=excluded.bio").bind(u.userId,name,handle,bio,Date.now()).run();return json({ok:true});
  }
  if(!me)return json({error:"Create your profile first"},400);
+ if(data.action==="removeHighlight"){
+   const row=await db().prepare("DELETE FROM highlights WHERE author=? AND id=? RETURNING id").bind(u.userId,data.id).first<{id:string}>();
+   if(!row)return json({error:"Answer not found"},404);
+   await env.BUCKET!.delete("highlights/"+row.id);
+   return json({ok:true});
+ }
  if(data.action==="deleteComment"){
    const result=await db().prepare("DELETE FROM comments WHERE id=? AND post=? AND author=?").bind(data.commentId,data.id,u.userId).run();
    return result.meta.changes?json({ok:true}):json({error:"Comment not found"},404);

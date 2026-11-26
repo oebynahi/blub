@@ -3,7 +3,7 @@ import PhotosUI
 import ImageIO
 
 struct Editor: View {
-    enum Mode { case profile(FeedResponse.Profile?), post }
+    enum Mode { case profile(FeedResponse.Profile?), post, highlight(HighlightSlot) }
     let model: AppModel
     let mode: Mode
     @Environment(\.dismiss) private var dismiss
@@ -22,10 +22,12 @@ struct Editor: View {
             _name = State(initialValue: p?.name ?? ""); _handle = State(initialValue: p?.handle ?? ""); _bio = State(initialValue: p?.bio ?? "")
         }
     }
+    private var slot: HighlightSlot? { if case .highlight(let slot) = mode { return slot }; return nil }
     private var isProfile: Bool { if case .profile = mode { return true }; return false }
     private var onboarding: Bool { if case .profile(nil) = mode { return true }; return false }
     var body: some View {
         Form {
+            if let slot { Text(slot.prompt).font(.headline) }
             Section {
                 if let image, let preview = UIImage(data: image) {
                     Image(uiImage: preview).resizable().scaledToFit().frame(maxHeight: 220)
@@ -38,12 +40,12 @@ struct Editor: View {
                 TextField("Name", text: $name).textContentType(.name)
                 TextField("Handle", text: $handle).textInputAutocapitalization(.never).autocorrectionDisabled()
                 TextField("Bio (optional)", text: $bio, axis: .vertical)
-            } else { TextField("Caption (optional)", text: $caption, axis: .vertical) }
+            } else if slot == nil { TextField("Caption (optional)", text: $caption, axis: .vertical) }
             if let error { Text(error).foregroundStyle(.pink) }
-            Button(isProfile ? "Save profile" : "Share with friends") { Task { await save() } }
+            Button(isProfile ? "Save profile" : slot != nil ? "Save answer" : "Share with friends") { Task { await save() } }
                 .disabled(working || preparing || (isProfile ? name.isEmpty || handle.isEmpty : image == nil))
             if working || preparing { ProgressView() }
-        }.disabled(working).navigationTitle(onboarding ? "Create your profile" : isProfile ? "Edit profile" : "Post a photo")
+        }.disabled(working).navigationTitle(onboarding ? "Create your profile" : isProfile ? "Edit profile" : slot != nil ? "Photo answer" : "Post a photo")
         .toolbar { if !onboarding { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(working) } } }
         .interactiveDismissDisabled(working)
         .task(id: selection) {
@@ -71,7 +73,8 @@ struct Editor: View {
     private func save() async {
         guard !working else { return }; working = true; defer { working = false }
         do {
-            let fields = isProfile ? ["action":"profile","name":name,"handle":handle,"bio":bio] : ["caption":caption]
+            var fields = isProfile ? ["action":"profile","name":name,"handle":handle,"bio":bio] : ["caption":caption]
+            if let slot { fields = ["action":"highlight","slot":slot.id] }
             try await model.service.write(fields, image: image, field: isProfile ? "avatar" : "photo")
             if !onboarding { dismiss() }
             await model.load()

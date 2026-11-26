@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Highlights } from "./highlights";
 import { PostInteractions, type Post } from "./post-interactions";
 
 async function getPage(after?: Post, signal?: AbortSignal, memberId?:string) {
@@ -53,6 +54,7 @@ export function ProfileGrid({ busy, act, remove, deleted, me, member }: {
       }}/>
   </>;
   return <>
+    <Highlights key={member?.id??me.id} owner={member?.id??me.id} editable={!member || member.id===me.id}/>
     <div className="profile-grid">{posts.map(p => <button key={p.id} onClick={() => setSelected(p.id)}
       aria-label={"Open photo: " + (p.caption || new Date(p.created_at).toLocaleDateString())}>
       <img src={"/api/blub?action=photo&id="+p.id} alt={p.caption} loading="lazy"/>

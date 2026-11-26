@@ -103,6 +103,29 @@ assert request(users[1], path=grid)[1]['posts'] == []
 assert request(users[2], path=member)[1]['name'] == 'Test Avatar'
 assert request(users[1], path=member+'missing')[0] == 404
 assert act(users[1], action='accept', id=friendship)[0] == 200
+# Prompt answers live on the profile, with the same access checks on image bytes.
+highlights = '/api/blub?action=highlights&id=' + users[0]
+def answer(slot):
+    boundary = 'HighlightTest'
+    body = (f'--{boundary}\r\nContent-Disposition: form-data; name="action"\r\n\r\nhighlight\r\n'
+            f'--{boundary}\r\nContent-Disposition: form-data; name="slot"\r\n\r\n{slot}\r\n'
+            f'--{boundary}\r\nContent-Disposition: form-data; name="photo"; filename="photo.png"\r\nContent-Type: image/png\r\n\r\n').encode() + avatar_bytes + f'\r\n--{boundary}--\r\n'.encode()
+    return request(users[0], body, content_type='multipart/form-data; boundary='+boundary)
+assert [row['id'] for row in request(users[0], path=highlights)[1]] == ['risk','proud','self']
+assert answer('unknown')[0] == 400
+assert answer('risk')[0] == 200
+first = request(users[1], path=highlights)[1][0]['photo']
+asset = '/api/blub?action=highlightPhoto&id='
+assert request(users[1], path=asset+first) == (200, avatar_bytes)
+assert request(users[2], path=highlights)[1] == []
+assert request(users[2], path=asset+first)[0] == 404
+assert act(users[1], action='removeHighlight', id=first)[0] == 404
+assert answer('risk')[0] == 200 and request(users[0], path=asset+first)[0] == 404
+assert answer('self')[0] == 200
+answers = request(users[1], path=highlights)[1]
+assert [row['id'] for row in answers] == ['risk','self']
+assert act(users[0], action='removeHighlight', id=answers[1]['photo'])[0] == 200
+assert len(feed(users[0])['posts']) == 2
 assert request(users[1], path=member)[1]['can_view'] == 1
 assert [p['id'] for p in request(users[1], path=grid)[1]['posts']] == [p['id'] for p in posts]
 assert request(users[2], path=grid)[1]['posts'] == []
@@ -158,6 +181,7 @@ assert act(users[1], action='unlike', id=post_id)[0] == 200
 assert feed(users[0])['posts'][0]['like_count'] == 0
 assert act(users[0], action='like', id=post_id)[0] == 200
 assert act(users[1], action='remove', id=friendship)[0] == 200
+assert request(users[1], path=asset+answers[0]['photo'])[0] == 404
 assert request(users[1], path=grid)[1]['posts'] == []
 assert request(users[1], path=member)[1]['can_view'] == 0
 assert request(users[1], path=thread)[0] == 404

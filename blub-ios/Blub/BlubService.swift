@@ -114,8 +114,8 @@ final class BlubService {
         guard (try? JSONDecoder().decode([String:Bool].self, from: result)["ok"]) == true else { throw BlubError.invalid }
     }
 
-    func photo(_ id: String, avatar: String? = nil) async throws -> UIImage {
-        var query = [URLQueryItem(name: "action", value: avatar == nil ? "photo" : "avatar"), .init(name: "id", value: id)]
+    func photo(_ id: String, avatar: String? = nil, highlight: Bool = false) async throws -> UIImage {
+        var query = [URLQueryItem(name: "action", value: highlight ? "highlightPhoto" : avatar == nil ? "photo" : "avatar"), .init(name: "id", value: id)]
         if let avatar { query.append(.init(name: "v", value: avatar)) }
         let (data, mime) = try await request(query)
         guard mime?.hasPrefix("image/") == true, let image = UIImage(data: data) else { throw BlubError.invalid }

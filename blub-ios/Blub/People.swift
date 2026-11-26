@@ -97,6 +97,7 @@ struct ProfileScreen: View {
                     if !visiting { Button("Edit") { edit = true } }
                 }.padding().chromeCard()
                 if !canView { Text("Photos are shared with friends.").foregroundStyle(.secondary) } else {
+                    HighlightsView(model: model, owner: me.id, editable: !visiting)
                     Text(visiting ? "Photos" : "Your photos").font(.headline)
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 5), count: 3), spacing: 5) {
                         ForEach(posts) { post in

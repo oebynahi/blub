@@ -46,3 +46,9 @@ export const digests = sqliteTable("digest_settings", {
   owner:text("owner").primaryKey().references(()=>users.id),email:text("email").notNull(),
   since:integer("since").notNull(),due:integer("due").notNull(),
 });
+
+export const highlights = sqliteTable("highlights", {
+  id: text("id").primaryKey(),
+  author: text("author").notNull().references(()=>users.id, {onDelete:"cascade"}),
+  slot: text("slot").notNull(),
+}, t=>[uniqueIndex("highlight_slot").on(t.author,t.slot)]);

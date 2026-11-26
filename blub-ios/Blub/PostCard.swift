@@ -4,6 +4,7 @@ struct PrivatePhoto: View {
     let id: String
     var avatar: String? = nil
     let service: BlubService
+    var highlight = false
     var thumbnail = false
     @State private var image: UIImage?
     @State private var failed = false
@@ -18,7 +19,7 @@ struct PrivatePhoto: View {
         }
         .task(id: "\(id)/\(avatar ?? "")/\(retry)") {
             image = nil; failed = false
-            do { let value = try await service.photo(id, avatar: avatar); try Task.checkCancellation(); image = value }
+            do { let value = try await service.photo(id, avatar: avatar, highlight: highlight); try Task.checkCancellation(); image = value }
             catch { if !Task.isCancelled { failed = true } }
         }
     }
